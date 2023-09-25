@@ -7,6 +7,10 @@ steps:
 
 -   get google scholar link for each name [name, google scholar link]
 
+    -   a) use google scholar search → got me IP blocked, even after paying for a proxy service - not feasible ❌
+    -   b) use csrankings → low hit rate on the sunshine list (sub 50%) – inaccurate ❌
+    -   c) semantic scholar (gets paid for by my course) → https://api.semanticscholar.org/api-docs/graph#tag/Author-Data/operation/get_graph_get_author_search
+
 -   join the two lists [name, salary, scraped data from google scholar]
 
 -   find correlation between salary and publication count

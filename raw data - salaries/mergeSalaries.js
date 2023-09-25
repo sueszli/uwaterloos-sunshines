@@ -2,8 +2,8 @@ import fs from 'fs'
 import { assert, log } from 'console'
 
 const main = async () => {
-    const PATH_2021 = './raw data - salary disclosure 2021/uw_salary.csv'
-    const PATH_2022 = './raw data - salary disclosure 2022/uw_salary.csv'
+    const PATH_2021 = './raw data - salaries/XYZ.csv'
+    const PATH_2022 = './raw data - salaries/XYZ.csv'
 
     const str2021 = fs.readFileSync(PATH_2021, 'utf-8')
     const str2022 = fs.readFileSync(PATH_2022, 'utf-8')

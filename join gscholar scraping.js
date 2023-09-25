@@ -1,4 +1,4 @@
-import fs from 'fs'
+import fs, { link } from 'fs'
 import { assert, log } from 'console'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
@@ -9,8 +9,7 @@ const greenLogStart = '\x1b[32m'
 const greenLogEnd = '\x1b[0m'
 
 const main = async () => {
-    const SALARIES_PATH = './raw data - salary disclosure/uw salaries merged.csv'
-    // const CSRANKING_PATH = './raw data - csranking/csrankings.csv'
+    const SALARIES_PATH = './raw data - salaries/uw salaries merged.csv'
 
     const strSAL = fs.readFileSync(SALARIES_PATH, 'utf-8')
     const parsedSAL = strSAL
@@ -25,25 +24,31 @@ const main = async () => {
         const salFirstname = salEntry[1].toLowerCase()
         const salName = [salFirstname, salLastname].join(' ').toLowerCase()
 
-        // look up names in google scholar
+        // find google scholar entry
         const nameQuery = salName.replace(/\./g, '').replace(/ /g, '+')
         const gScholarQuery = 'https://scholar.google.com/citations?view_op=search_authors&mauthors=' + nameQuery
-        const htmlStr = await axios.get(gScholarQuery).then((r) => r.data)
+        const htmlStr = await axios.get(gScholarQuery).then((r) => r.data) // <--- this got me blocked
         const $ = cheerio.load(htmlStr)
 
-        // get all h3 with class 'gs_ai_name'
-        const gsAiNames = $('h3.gs_ai_name')
-        if (gsAiNames.length === 0) {
+        // find first links
+        const links = $('a.gs_ai_pho')
+        if (links.length === 0) {
             log(`${salName}: ${redLogStart}no google scholar entries found${redLogEnd}`)
+            numFailure++
             continue
         }
-
-        // log('found:', gsAiNames.length)
+        if (link.length > 1) {
+            log(`${salName}: multiple google scholar entries found`)
+        }
 
         // click on first link
-        // get citations
-        // get h-index
-        // get i10-index
+        const link = links[0]
+        const subHtmlStr = await axios.get(link).then((r) => r.data)
+        const $sub = cheerio.load(subHtmlStr)
+        const table = $sub('table#gsc_rsb_st')
+        log(table)
+
+        await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 }
 await main()
