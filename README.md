@@ -14,3 +14,5 @@ steps:
 -   join the two lists [name, salary, scraped data from google scholar]
 
 -   find correlation between salary and publication count
+
+> keep in mind: after processing, the repository must go private, the data must be obfuscated and the page should be only accessible on github pages with a little password
