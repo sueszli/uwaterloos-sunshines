@@ -10,6 +10,8 @@
             </text></svg>"
         />
         <title>uwaterloo's sunshines</title>
+
+        <script src="https://cdn.jsdelivr.net/npm/range-slider-input@2.4/dist/rangeslider.umd.min.js"></script>
     </head>
     <body>
         <header>
@@ -19,6 +21,10 @@
                 earners (those making over $100,000 annually). although the dataset, sourced from the 'semantic scholar' api, has inaccuracies and misses about
                 20% data (notably, many are not researchers), the findings are still noteworthy.
             </p>
+
+            <br />
+
+            <div id="range-slider"></div>
         </header>
 
         <div id="container-wrapper">
@@ -49,7 +55,31 @@
             align-items: center;
         }
         #container {
+            margin-top: -4rem;
             margin-bottom: 2rem;
+        }
+
+        #range-slider {
+            margin: auto;
+            width: 600px;
+            height: 24px;
+            border-radius: 12px;
+            background: #353644;
+        }
+        #range-slider .range-slider__thumb {
+            border: 6px solid #fff;
+            box-sizing: border-box;
+        }
+        #range-slider .range-slider__thumb[data-lower] {
+            background: #0073e6;
+        }
+        #range-slider .range-slider__thumb[data-upper] {
+            background: #ee2c2c;
+        }
+        #range-slider .range-slider__range {
+            background: linear-gradient(to right, #0073e6, #ee2c2c);
+            background-size: 200% 100%;
+            background-position: 50% 0;
         }
     </style>
     <script type="module">
@@ -188,31 +218,26 @@
                 })
         }
 
-        const filterData = (data, minComp, maxComp) => {
-            assert(typeof minComp === 'number' || minComp === null, 'minComp must be a number or null')
-            assert(typeof maxComp === 'number' || maxComp === null, 'maxComp must be a number or null')
-            assert(minComp === null || maxComp === null || minComp <= maxComp, 'minComp must be less than or equal to maxComp')
-            assert(minComp === null || minComp >= 0, 'minComp must be greater than or equal to 0')
-            assert(maxComp === null || maxComp >= 0, 'maxComp must be greater than or equal to 0')
-
-            const totalMaxComp = d3.max(data, (d) => d.totalcomp)
-            const totalMinComp = d3.min(data, (d) => d.totalcomp)
-            if (minComp === null) {
-                minComp = totalMinComp
-            }
-            if (maxComp === null) {
-                maxComp = totalMaxComp
-            }
-
-            return data.filter((d) => d.totalcomp >= minComp && d.totalcomp <= maxComp)
-        }
-
         async function main() {
             const data = await getCleanData()
             render(data)
 
-            // listen for range slider changes to filter data
-            // ...
+            const sliderElem = document.querySelector('#range-slider')
+            rangeSlider(sliderElem, {
+                step: 'any',
+                min: d3.min(data, (d) => d.totalcomp),
+                max: d3.max(data, (d) => d.totalcomp),
+                value: [d3.min(data, (d) => d.totalcomp), d3.max(data, (d) => d.totalcomp)],
+                onInput: (event) => {
+                    const min = event[0]
+                    const max = event[1]
+                    const filteredData = data.filter((d) => d.totalcomp >= min && d.totalcomp <= max)
+                    console.log('min:', min, ', max:', max, ' ---> ', filteredData.length, 'rows')
+
+                    d3.select('#container svg').remove()
+                    render(filteredData)
+                },
+            })
         }
         main()
     </script>
