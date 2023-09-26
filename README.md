@@ -15,6 +15,7 @@ _steps:_
 
 -   find correlation and visualize data from the joined table
 
+    -   rename repository to sunshine list
     -   github repository must be private
     -   github pages website must be public (but the people shouldn't be identifiable)
     -   visualization must be interactive
