@@ -26,10 +26,10 @@
         </div>
     </body>
     <style>
-        /* disable scrolling */
         body {
             overflow: hidden;
         }
+
         header {
             transform: translateY(20px);
             text-align: center;
@@ -49,7 +49,7 @@
             align-items: center;
         }
         #container {
-            margin-bottom: 10rem;
+            margin-bottom: 2rem;
         }
     </style>
     <script type="module">
@@ -146,6 +146,24 @@
                 .each(function (d) {
                     d3.select(this).call(d3.axisLeft().scale(y[d]))
                 })
+
+            const format = d3.format('.2s')
+            axis.each(function (d) {
+                d3.select(this).call(d3.axisLeft().scale(y[d]).tickFormat(format))
+            })
+
+            axis.append('text')
+                .attr('class', function (d, i) {
+                    return 'axis_' + i
+                })
+                .text(function (d) {
+                    return d
+                })
+                .attr('x', 0)
+                .attr('y', 13)
+                .attr('text-anchor', 'middle')
+                .style('fill', '#000')
+                .style('font-size', '10px')
 
             const line = d3
                 .line()
