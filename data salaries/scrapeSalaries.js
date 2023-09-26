@@ -11,7 +11,6 @@ const main = async () => {
     const htmlStr = await axios.get(url).then((r) => r.data)
     const $ = cheerio.load(htmlStr)
     const table = $('table')
-
     const csv = []
 
     // get header
@@ -19,7 +18,7 @@ const main = async () => {
     table.find('thead tr th').each((_, el) => {
         header.push($(el).text())
     })
-    csv.push(header.join(','))
+    csv.push(header.join(';'))
 
     // get content
     table.find('tbody tr').each((_, el) => {
@@ -27,14 +26,13 @@ const main = async () => {
         $(el)
             .find('td')
             .each((_, el) => row.push($(el).text()))
-        const rowStr = row.join(',')
+        const rowStr = row.join(';')
         csv.push(rowStr)
     })
-
     const csvStr = csv.join('\n')
 
     // save to file
-    const fileName = 'uw_salary.csv'
+    const fileName = './uw_salary.csv'
     fs.writeFileSync(fileName, csvStr)
     log(`Saved to ${fileName}`)
 

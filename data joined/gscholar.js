@@ -1,3 +1,5 @@
+// failed attempt: scraping google scholar
+
 import fs, { link } from 'fs'
 import { assert, log } from 'console'
 import axios from 'axios'
@@ -9,7 +11,7 @@ const greenLogStart = '\x1b[32m'
 const greenLogEnd = '\x1b[0m'
 
 const main = async () => {
-    const SALARIES_PATH = './raw data - salaries/uw salaries merged.csv'
+    const SALARIES_PATH = './data salaries/uw salaries merged.csv'
 
     const strSAL = fs.readFileSync(SALARIES_PATH, 'utf-8')
     const parsedSAL = strSAL
@@ -27,7 +29,7 @@ const main = async () => {
         // find google scholar entry
         const nameQuery = salName.replace(/\./g, '').replace(/ /g, '+')
         const gScholarQuery = 'https://scholar.google.com/citations?view_op=search_authors&mauthors=' + nameQuery
-        const htmlStr = await axios.get(gScholarQuery).then((r) => r.data) // <--- this got me blocked
+        const htmlStr = await axios.get(gScholarQuery).then((r) => r.data)
         const $ = cheerio.load(htmlStr)
 
         // find first links

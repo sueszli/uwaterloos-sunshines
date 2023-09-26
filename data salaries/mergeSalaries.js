@@ -2,22 +2,25 @@ import fs from 'fs'
 import { assert, log } from 'console'
 
 const main = async () => {
-    const PATH_2021 = './raw data - salaries/XYZ.csv'
-    const PATH_2022 = './raw data - salaries/XYZ.csv'
+    const PATH_2021 = './data salaries/uw salaries 2021.csv'
+    const PATH_2022 = './data salaries/uw salaries 2022.csv'
+    const PATH_OUT = './merged salaries.csv'
 
     const str2021 = fs.readFileSync(PATH_2021, 'utf-8')
     const str2022 = fs.readFileSync(PATH_2022, 'utf-8')
-
     assert(str2021.split('\n')[0] === str2022.split('\n')[0])
+
+    const header = str2021.split('\n')[0]
+    fs.writeFileSync(PATH_OUT, header)
 
     const parsed2021 = str2021
         .split('\n')
         .slice(1)
-        .map((line) => line.split(','))
+        .map((line) => line.split(';'))
     const parsed2022 = str2022
         .split('\n')
         .slice(1)
-        .map((line) => line.split(','))
+        .map((line) => line.split(';'))
 
     // find entries in 2021 missing in 2022
     const missingEntries = []
@@ -31,8 +34,12 @@ const main = async () => {
         }
     })
 
-    // save 2022 + missing entries as 'mergedEntries'
+    // mergedEntries = everything from 2022 + entries from 2021 that are missing in 2022
     const mergedEntries = parsed2022.concat(missingEntries)
-    fs.writeFileSync('./joinedSalaries.csv', mergedEntries.join('\n'))
+    // join with semicolon
+    mergedEntries.forEach((entry, i) => {
+        mergedEntries[i] = entry.join(';')
+    })
+    fs.writeFileSync(PATH_OUT, mergedEntries.join('\n'))
 }
 await main()
