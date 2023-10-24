@@ -1,4 +1,8 @@
-_steps:_
+check the project out on github pages!
+
+<br>
+
+_how it was built:_
 
 -   get salary data ✅
 
