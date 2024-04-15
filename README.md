@@ -1,6 +1,6 @@
 check the project out on github pages!
 
-<br>
+<!--
 
 _how it was built:_
 
@@ -19,3 +19,4 @@ _how it was built:_
 
 -   find correlation and visualize data from the joined table → parallel coordinates plot ✅
 
+-->
