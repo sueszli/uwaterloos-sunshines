@@ -298,10 +298,7 @@ def get_final():
                 top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
                 if top1 not in ["Male", "Female"]:
                     return None
-                # check if string is "Male"
-                if "Male" is top1:
-                    return "M"
-                return "F"
+                return "F" if top1 == "Female" else "M"
 
             def get_year(year: int):
                 year_dic = [elem for elem in employee["years"] if elem["year"] == year]
