@@ -13,3 +13,10 @@ stuff i've done in chronological order:
     - cleaned strings
     - employees have multiple entries, so it's timeseries data
 - merged csrankings with sunshine list
+    - used fuzzy matching to match names, dropped non uwaterloo affiliations
+    - very few matches, so i'll have to use semantic scholar api + google scholar api
+        - num all rows in csrankings: 29360
+        - num uwaterloo rows csranking: 149
+        - num all rows in sunshines: 2514
+        - found matches: 107 (using threshold 0.8 - anything else would lead to duplicates)
+

@@ -1,9 +1,13 @@
 import csv
 import json
-from pathlib import Path
 import re
+from pathlib import Path
+
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from fuzzywuzzy import fuzz
+from tqdm import tqdm
 
 outputpath = Path("__file__").parent / "data"
 
@@ -30,7 +34,7 @@ def download_csrankings():
 def download_uwaterloos_sunshines_old(year):
     prefix = "https://uwaterloo.ca/about/accountability/salary-disclosure-"
     url = f"{prefix}{year}"
-    if (outputpath / f"sunshines_{year}.csv").exists():
+    if (outputpath / f"sunshines{year}.csv").exists():
         print("file already exists")
         return
 
@@ -41,7 +45,7 @@ def download_uwaterloos_sunshines_old(year):
     schema = [th.text.replace(",", " ") for th in table.find("thead").find_all("th")]
     tbody = table.find("tbody")
 
-    with open(outputpath / f"sunshines_{year}.csv", "w") as f:
+    with open(outputpath / f"sunshines{year}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(schema)
         for tr in tbody.find_all("tr"):
@@ -51,7 +55,7 @@ def download_uwaterloos_sunshines_old(year):
 def download_uwaterloos_sunshines_new(year):
     prefix = "https://uwaterloo.ca/about/accountability/salary-disclosure-"
     url = f"{prefix}{year}"
-    if (outputpath / f"sunshines_{year}.csv").exists():
+    if (outputpath / f"sunshines{year}.csv").exists():
         print("file already exists")
         return
 
@@ -64,7 +68,7 @@ def download_uwaterloos_sunshines_new(year):
         td.string = td.text  # drop useless <span>
     schema = [th.text.replace(",", " ") for th in table.find_all("th")]  # find schema in body
 
-    with open(outputpath / f"sunshines_{year}.csv", "w") as f:
+    with open(outputpath / f"sunshines{year}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(schema)
         for tr in tbody.find_all("tr"):
@@ -81,35 +85,20 @@ download_uwaterloos_sunshines_new(2023)
 
 
 """
-preprocessing data
+join of datasets
 """
 
 
 def merge_sunshines():
-    if (outputpath / "sunshines.json").exists():
+    if (outputpath / "sunshines-v1.json").exists():
         print("file already exists")
         return
 
-    sunshines = list(outputpath.glob("sunshines_*.csv"))
+    sunshines = list(outputpath.glob("sunshines*.csv"))
     employees = {}  # key: (firstname, lastname)
 
-    """
-    {
-        "firstname": str,
-        "lastname": str,
-        "years": [
-            {
-                "year": int,
-                "role": str,
-                "salary": float,
-                "benefits": float
-            }
-        ]
-    }
-    """
-
     for f in sunshines:
-        year = int(f.stem.split("_")[1])
+        year = int(f.stem[-4:])
 
         reader = csv.reader(open(f, "r"))
         next(reader)
@@ -128,20 +117,52 @@ def merge_sunshines():
             benefits = float(row[4].replace(" ", "").replace("$", "").replace(",", ""))
 
             if (fstname, lstname) not in employees:
-                employees[(fstname, lstname)] = {
-                    "firstname": fstname,
-                    "lastname": lstname,
-                    "years": []
-                }
-            employees[(fstname, lstname)]["years"].append({
-                "year": year,
-                "role": role,
-                "salary": salary,
-                "benefits": benefits
-            })
+                employees[(fstname, lstname)] = {"firstname": fstname, "lastname": lstname, "years": []}
+            employees[(fstname, lstname)]["years"].append({"year": year, "role": role, "salary": salary, "benefits": benefits})
 
-    with open(outputpath / "sunshines.jsonl", "w") as f:
+    with open(outputpath / "sunshines-v1.jsonl", "w") as f:
         for employee in employees.values():
             f.write(json.dumps(employee) + "\n")
 
+
+def join_datasets():
+    if (outputpath / "sunshines-v2.jsonl").exists():
+        print("file already exists")
+        return
+
+    sunshines = outputpath / "sunshines-v1.jsonl"
+    csrankings = outputpath / "csrankings.csv"
+
+    csrankings_df = pd.read_csv(csrankings)
+    print(f"num all rows in csrankings: {len(csrankings_df)}")
+    csrankings_df = csrankings_df[csrankings_df["affiliation"].str.contains("waterloo", case=False)]
+    print(f"num uwaterloo rows csranking: {len(csrankings_df)}")
+    print(f"num all rows in sunshines: {len(open(sunshines, 'r').readlines())}")
+
+    def fuzzy_match(name1, name2, threshold=80):
+        name1 = name1.lower().strip()
+        name2 = name2.lower().strip()
+        ratio = fuzz.token_sort_ratio(name1, name2)
+        return ratio >= threshold
+
+    found_matches = 0
+    with open(outputpath / "sunshines-v2.jsonl", "w") as f:
+        for line in tqdm(open(sunshines, "r")):
+            employee = json.loads(line)
+            name = (employee["lastname"] + " " + employee["firstname"]).lower().strip()
+
+            scholarids = set()
+            for _, row in csrankings_df.iterrows():
+                if fuzzy_match(name, row["name"]):
+                    scholarids.add(row["scholarid"])
+            if len(scholarids) > 0:
+                found_matches += 1
+            employee["scholarids_csr"] = list(scholarids)
+
+            f.write(json.dumps(employee) + "\n")
+
+    print(f"found matches: {found_matches}")
+
+
 merge_sunshines()
+join_datasets()
