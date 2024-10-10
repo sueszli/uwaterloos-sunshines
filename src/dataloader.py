@@ -13,7 +13,8 @@ outputpath = Path("__file__").parent / "data"
 
 
 """
-uwaterloo salary disclosures, merging years 2020-2023
+get uwaterloo salary disclosures
+merge years 2020-2023
 """
 
 
@@ -25,7 +26,7 @@ def get_sunshines_old(year):
         return
 
     page = requests.get(url)
-    assert page.status_code == 200
+    assert page.status_code == 200, f"status code: {page.status_code}"
     soup = BeautifulSoup(page.content, "html.parser")
     table = soup.find("table")
     schema = [th.text.replace(",", " ") for th in table.find("thead").find_all("th")]
@@ -46,7 +47,7 @@ def get_sunshines_new(year):
         return
 
     page = requests.get(url)
-    assert page.status_code == 200
+    assert page.status_code == 200, f"status code: {page.status_code}"
     soup = BeautifulSoup(page.content, "html.parser")
     table = soup.find("table")
     tbody = table.find("tbody")
@@ -73,17 +74,14 @@ def merge_sunshines():
 
     for f in sunshines:
         year = int(f.stem[-4:])
-
         reader = csv.reader(open(f, "r"))
         next(reader)
 
         for row in reader:
             row = [elem.strip() for elem in row]
             row = [re.sub(r"\s+", " ", elem) for elem in row]
-
             if (len(row) == 0) or any([len(elem) == 0 for elem in row]):
                 continue
-
             fstname = row[0]
             lstname = row[1]
             role = row[2]
@@ -107,8 +105,16 @@ merge_sunshines()
 
 
 """
-joining sunshines with csrankings to find scholarids (not effective)
+join salary disclosures with csrankings (not effective)
 """
+
+
+def fuzzy_match(name1, name2, threshold):
+    assert 0 <= threshold <= 100
+    name1 = name1.lower().strip()
+    name2 = name2.lower().strip()
+    ratio = fuzz.token_sort_ratio(name1, name2)
+    return ratio >= threshold
 
 
 def get_csrankings():
@@ -117,7 +123,7 @@ def get_csrankings():
         print("file already exists")
         return
     page = requests.get(url)
-    assert page.status_code == 200
+    assert page.status_code == 200, f"status code: {page.status_code}"
 
     page = requests.get(url)
     assert page.status_code == 200
@@ -132,18 +138,11 @@ def join_csrankings():
 
     sunshines = outputpath / "sunshines-v1.jsonl"
     csrankings = outputpath / "csrankings.csv"
-
     csrankings_df = pd.read_csv(csrankings)
     print(f"num all rows in csrankings: {len(csrankings_df)}")
     csrankings_df = csrankings_df[csrankings_df["affiliation"].str.contains("waterloo", case=False)]
     print(f"num uwaterloo rows csranking: {len(csrankings_df)}")
     print(f"num all rows in sunshines: {len(open(sunshines, 'r').readlines())}")
-
-    def fuzzy_match(name1, name2, threshold=80):
-        name1 = name1.lower().strip()
-        name2 = name2.lower().strip()
-        ratio = fuzz.token_sort_ratio(name1, name2)
-        return ratio >= threshold
 
     found_matches = 0
     with open(outputpath / "sunshines-v2.jsonl", "w") as f:
@@ -153,11 +152,11 @@ def join_csrankings():
 
             scholarids = set()
             for _, row in csrankings_df.iterrows():
-                if fuzzy_match(name, row["name"]):
+                if fuzzy_match(name, row["name"], threshold=80):
                     scholarids.add(row["scholarid"])
             if len(scholarids) > 0:
                 found_matches += 1
-            employee["scholarids_csr"] = list(scholarids)
+            employee["csrankings_scholarids"] = list(scholarids)
 
             f.write(json.dumps(employee) + "\n")
 
@@ -168,14 +167,63 @@ get_csrankings()
 join_csrankings()
 
 
-
 """
-joining sunshines with semantic scholar to find scholarids (effective)
+join salary disclosures with semantic scholar
 """
 
-# https://api.semanticscholar.org/graph/v1/author/search?query=
 
 def join_sscholar():
-    print("yo")
+    sunshines = outputpath / "sunshines-v2.jsonl"
+    assert sunshines.exists()
+    outfile = outputpath / "sunshines-v3.jsonl"
+
+    def is_cached(firstname, lastname):
+        content = open(outfile).read()
+        for line in content.split("\n"):
+            if len(line) == 0:
+                continue
+            employee = json.loads(line)
+            if (employee["firstname"] == firstname) and (employee["lastname"] == lastname):
+                return True
+        return False
+
+    if not outfile.exists():
+        open(outfile, "w").close()
+
+    with tqdm(open(outfile, "a")) as out:
+
+        for line in open(sunshines, "r"):
+            employee = json.loads(line)
+            if is_cached(employee["firstname"], employee["lastname"]):  # compute is cheaper than network
+                print("cached")
+                continue
+
+            url = "https://api.semanticscholar.org/graph/v1/author/search?query="
+            name_encoded = (employee["lastname"].replace(" ", "+") + "+" + employee["firstname"].replace(" ", "+")).lower().strip()
+            suffix = "&fields=authorId,externalIds,name,paperCount,citationCount,hIndex"
+            page = requests.get(url + name_encoded + suffix)
+            assert page.status_code == 200, f"status code: {page.status_code}"
+            res = page.json()
+            if (res["total"] <= 0) or (len(res["data"]) == 0):
+                continue
+            res = res["data"]
+
+            # 1) fuzzy name match
+            name = (employee["lastname"] + " " + employee["firstname"]).lower().strip()
+            res = [elem for elem in res if fuzzy_match(name, elem["name"], threshold=80)]
+
+            # 2) prefer options with externalIds
+            if (len(res) > 1) and any([len(elem["externalIds"]) > 0 for elem in res]):
+                res = [elem for elem in res if len(elem["externalIds"]) > 0]
+
+            # 3) prefer highest performing author
+            if len(res) > 1:
+                res = sorted(res, key=lambda x: x["citationCount"] + x["paperCount"] + x["hIndex"], reverse=True)
+                res = [res[0]]
+
+            if len(res) == 0:
+                continue
+            res = res[0]
+            out.write(json.dumps({**employee, **res}) + "\n")
 
 join_sscholar()

@@ -24,7 +24,10 @@ stuff i've done in chronological order:
     - other related proxy services are pretty expensive
     - endpoint: `https://scholar.google.com/citations?view_op=search_authors&mauthors=`
 - joined with semantic scholar
+    - switching ips via vpn was helpful
     - endpoint: `https://api.semanticscholar.org/graph/v1/author/search?query=`
+    - `affiliations` field was always empty although that would have been most useful
+    - `homepage` field was also alwyas empty
 
 
 
