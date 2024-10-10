@@ -17,8 +17,7 @@ outputpath = Path("__file__").parent / "data"
 
 
 """
-get uwaterloo salary disclosures.
-merge years 2020-2023.
+get uwaterloo salary disclosures, merge years 2020-2023
 """
 
 
