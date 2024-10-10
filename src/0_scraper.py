@@ -43,7 +43,26 @@ def download_uwaterloos_sunshines_old(year):
 
 
 def download_uwaterloos_sunshines_new(year):
-    exit()
+    prefix = "https://uwaterloo.ca/about/accountability/salary-disclosure-"
+    url = f"{prefix}{year}"
+    if (outputpath / f"sunshines_{year}.csv").exists():
+        print("file already exists")
+        return
+
+    page = requests.get(url)
+    assert page.status_code == 200
+    soup = BeautifulSoup(page.content, "html.parser")
+    table = soup.find("table")
+    tbody = table.find("tbody")
+    for td in tbody.find_all("td"):
+        td.string = td.text  # drop useless <span>
+
+    with open(outputpath / f"sunshines_{year}.csv", "w") as f:
+        writer = csv.writer(f)
+        for tr in tbody.find_all("tr"):
+            row = [td.text.replace(",", " ") for td in tr.find_all("td")]
+            if any(row):
+                writer.writerow(row)
 
 
 download_csrankings()
