@@ -12,4 +12,3 @@ geometry:
     - right=10mm
 ---
 
-wussup world

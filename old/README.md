@@ -1,7 +1,3 @@
-check the project out on github pages!
-
-<!--
-
 _how it was built:_
 
 -   get salary data ✅
@@ -18,5 +14,3 @@ _how it was built:_
 -   join salary table with the researcher's performance table ✅
 
 -   find correlation and visualize data from the joined table → parallel coordinates plot ✅
-
--->
