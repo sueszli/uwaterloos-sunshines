@@ -1,3 +1,5 @@
+from typing import Optional
+from transformers import pipeline
 import csv
 import json
 import random
@@ -15,8 +17,8 @@ outputpath = Path("__file__").parent / "data"
 
 
 """
-get uwaterloo salary disclosures
-merge years 2020-2023
+get uwaterloo salary disclosures.
+merge years 2020-2023.
 """
 
 
@@ -107,7 +109,7 @@ merge_sunshines()
 
 
 """
-join salary disclosures with csrankings (not effective)
+join salary disclosures with csrankings
 """
 
 
@@ -181,11 +183,6 @@ def join_sscholar(retry=False):
         return
     outfile = outputpath / "sunshines-v3.jsonl"
 
-    def print_progress():
-        total = len(open(sunshines, "r").readlines())
-        current = len(open(outfile, "r").readlines())
-        print(f"progress: {current}/{total} ({current / total * 100:.2f}%)")
-
     def is_cached(firstname, lastname):  # compute is cheaper than network
         content = open(outfile).read()
         for line in content.split("\n"):
@@ -205,8 +202,6 @@ def join_sscholar(retry=False):
                 return page
             except:
                 retries += 1
-                print(f"\n\nretry: {retries}")
-                print_progress()
                 time.sleep(random.uniform(1, 3))
         else:
             print(f"max retries reached...")
@@ -216,7 +211,7 @@ def join_sscholar(retry=False):
         open(outfile, "w").close()
 
     with open(outfile, "a") as out:
-        for line in tqdm(open(sunshines, "r")):
+        for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
             employee = json.loads(line)
             if is_cached(employee["firstname"], employee["lastname"]):
                 continue
@@ -250,4 +245,57 @@ def join_sscholar(retry=False):
             out.write(json.dumps({**employee, **res}) + "\n")
 
 
-join_sscholar(retry=True)
+join_sscholar(retry=False)
+
+
+"""
+preprocessing
+"""
+
+
+weightpath = Path("__file__").parent / "weights"
+if not weightpath.exists():
+    weightpath.mkdir()
+gender_classifier = pipeline("text-classification", model="padmajabfrl/Gender-Classification", model_kwargs={"cache_dir": weightpath})
+
+
+def get_sex(name: str) -> Optional[str]:
+    preds = gender_classifier(name)
+    top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
+    if top1 not in ["Male", "Female"]:
+        return None
+    return top1
+
+
+def get_final():
+    sunshines = outputpath / "sunshines-v3.jsonl"
+    if (outputpath / "sunshines-final.jsonl").exists():
+        print("file already exists")
+        return
+
+    for line in open(sunshines, "r"):
+        employee = json.loads(line)
+
+        # drop:
+        # - name: we don't care about the gender of the employee
+        # - ids: we've fetched performance metrics already
+
+
+        new_employee = {
+            "name": employee["name"],
+            "sex": get_sex(employee["name"]),
+
+            "paper_count": employee["paperCount"],
+            "citation_count": employee["citationCount"],
+            "h_index": employee["hIndex"],
+
+        }
+
+        print(json.dumps(employee, indent=4))
+        print(json.dumps(new_employee, indent=4))
+        print()
+        print()
+        print()
+
+
+get_final()
