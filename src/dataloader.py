@@ -1,4 +1,5 @@
 import csv
+import json
 from pathlib import Path
 
 import requests
@@ -61,8 +62,8 @@ def download_uwaterloos_sunshines_new(year):
     tbody = table.find("tbody")
     for td in tbody.find_all("td"):
         td.string = td.text  # drop useless <span>
-    schema = [th.text.replace(",", " ") for th in table.find_all("th")] # find schema in body
-    
+    schema = [th.text.replace(",", " ") for th in table.find_all("th")]  # find schema in body
+
     with open(outputpath / f"sunshines_{year}.csv", "w") as f:
         writer = csv.writer(f)
         writer.writerow(schema)
@@ -77,3 +78,50 @@ download_uwaterloos_sunshines_old(2020)
 download_uwaterloos_sunshines_old(2021)
 download_uwaterloos_sunshines_old(2022)
 download_uwaterloos_sunshines_new(2023)
+
+
+"""
+preprocessing data
+"""
+
+
+def merge_sunshines():
+    if (outputpath / "sunshines.json").exists():
+        print("file already exists")
+        return
+
+    sunshines = list(outputpath.glob("sunshines_*.csv"))
+    sunshines.sort(reverse=True)  # fall back to latest data first
+    employees = {}  # (fstname, lstname) -> [positions], [totalcomps]
+
+    for f in sunshines:
+        reader = csv.reader(open(f, "r"))
+        next(reader)
+        for row in reader:
+            if len(row) == 0:
+                continue
+
+            # parse data
+            fstname = row[0].strip().upper()
+            lstname = row[1].strip().upper()
+            if not fstname or not lstname:
+                continue
+
+            role = row[2].strip()
+
+            salary = float(row[3].strip().replace(" ", "").replace("$", "").replace(",", ""))
+            benefits = float(row[4].strip().replace(" ", "").replace("$", "").replace(",", ""))
+            totalcomp = float(salary + benefits)
+
+            # insert if not exists
+            if (fstname, lstname) not in employees:
+                employees[(fstname, lstname)] = [[], []]
+            employees[(fstname, lstname)][0].append(role)
+            employees[(fstname, lstname)][1].append(totalcomp)
+
+    employees = [{"firstname": k[0], "lastname": k[1], "positions": v[0], "totalcomps": v[1]} for k, v in employees.items()]
+    with open(outputpath / "sunshines.json", "w") as f:
+        json.dump(employees, f, indent=4)
+
+
+merge_sunshines()
