@@ -1,17 +1,17 @@
-from typing import Optional
-from transformers import pipeline
 import csv
 import json
 import random
 import re
 import time
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 from tqdm import tqdm
+from transformers import pipeline
 
 outputpath = Path("__file__").parent / "data"
 
@@ -259,43 +259,84 @@ if not weightpath.exists():
 gender_classifier = pipeline("text-classification", model="padmajabfrl/Gender-Classification", model_kwargs={"cache_dir": weightpath})
 
 
-def get_sex(name: str) -> Optional[str]:
-    preds = gender_classifier(name)
-    top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
-    if top1 not in ["Male", "Female"]:
-        return None
-    return top1
-
-
 def get_final():
     sunshines = outputpath / "sunshines-v3.jsonl"
-    if (outputpath / "sunshines-final.jsonl").exists():
+    outfile = outputpath / "sunshines-final.csv"
+    if outfile.exists():
         print("file already exists")
         return
 
-    for line in open(sunshines, "r"):
-        employee = json.loads(line)
+    schema = [
+        "name",
+        "sex",
+        "paper_count",
+        "citation_count",
+        "h_index",
+        "role_2020",
+        "salary_2020",
+        "benefits_2020",
+        "role_2021",
+        "salary_2021",
+        "benefits_2021",
+        "role_2022",
+        "salary_2022",
+        "benefits_2022",
+        "role_2023",
+        "salary_2023",
+        "benefits_2023",
+    ]
 
-        # drop:
-        # - name: we don't care about the gender of the employee
-        # - ids: we've fetched performance metrics already
+    with open(outfile, "w") as f:
+        writer = csv.writer(f)
+        writer.writerow(schema)
 
+        for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
+            employee = json.loads(line)
 
-        new_employee = {
-            "name": employee["name"],
-            "sex": get_sex(employee["name"]),
+            def get_sex(name: str) -> Optional[str]:
+                preds = gender_classifier(name)
+                top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
+                if top1 not in ["Male", "Female"]:
+                    return None
+                # check if string is "Male"
+                if "Male" is top1:
+                    return "M"
+                return "F"
 
-            "paper_count": employee["paperCount"],
-            "citation_count": employee["citationCount"],
-            "h_index": employee["hIndex"],
+            def get_year(year: int):
+                year_dic = [elem for elem in employee["years"] if elem["year"] == year]
+                if len(year_dic) == 0:
+                    return {
+                        f"role_{year}": None,
+                        f"salary_{year}": None,
+                        f"benefits_{year}": None,
+                    }
+                year_dic = year_dic[0]
+                return {
+                    f"role_{year}": year_dic["role"],
+                    f"salary_{year}": year_dic["salary"],
+                    f"benefits_{year}": year_dic["benefits"],
+                }
 
-        }
+            fullname = employee["lastname"] + " " + employee["firstname"]
+            fullname = " ".join([elem.lower().capitalize() for elem in fullname.split()])
+            new_employee = {
+                "name": fullname,
+                "sex": get_sex(fullname),
+                "paper_count": employee["paperCount"],
+                "citation_count": employee["citationCount"],
+                "h_index": employee["hIndex"],
+                **get_year(2020),
+                **get_year(2021),
+                **get_year(2022),
+                **get_year(2023),
+            }
 
-        print(json.dumps(employee, indent=4))
-        print(json.dumps(new_employee, indent=4))
-        print()
-        print()
-        print()
+            for key in new_employee:
+                if isinstance(new_employee[key], str):
+                    new_employee[key] = new_employee[key].encode("ascii", "ignore").decode()
+
+            writer.writerow([new_employee[key] for key in schema])
 
 
 get_final()
