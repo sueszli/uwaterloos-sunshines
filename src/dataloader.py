@@ -7,6 +7,11 @@ from bs4 import BeautifulSoup
 outputpath = Path("__file__").parent / "data"
 
 
+"""
+scraping data
+"""
+
+
 def download_csrankings():
     url = "https://raw.githubusercontent.com/emeryberger/CSrankings/refs/heads/gh-pages/csrankings.csv"
     if (outputpath / "csrankings.csv").exists():
@@ -56,9 +61,11 @@ def download_uwaterloos_sunshines_new(year):
     tbody = table.find("tbody")
     for td in tbody.find_all("td"):
         td.string = td.text  # drop useless <span>
-
+    schema = [th.text.replace(",", " ") for th in table.find_all("th")] # find schema in body
+    
     with open(outputpath / f"sunshines_{year}.csv", "w") as f:
         writer = csv.writer(f)
+        writer.writerow(schema)
         for tr in tbody.find_all("tr"):
             row = [td.text.replace(",", " ") for td in tr.find_all("td")]
             if any(row):
