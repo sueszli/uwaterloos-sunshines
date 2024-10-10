@@ -1,0 +1,4 @@
+- downloaded csrankings data
+    - source: https://github.com/emeryberger/CSrankings/blob/gh-pages/csrankings.csv
+    - schema: name,affiliation,homepage,scholarid
+    - quarterly updated data, scholars can add pull requests to update their affiliation
