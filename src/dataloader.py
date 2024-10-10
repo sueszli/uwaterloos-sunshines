@@ -13,25 +13,11 @@ outputpath = Path("__file__").parent / "data"
 
 
 """
-scraping data
+uwaterloo salary disclosures, merged 2020-2023
 """
 
 
-def download_csrankings():
-    url = "https://raw.githubusercontent.com/emeryberger/CSrankings/refs/heads/gh-pages/csrankings.csv"
-    if (outputpath / "csrankings.csv").exists():
-        print("file already exists")
-        return
-    page = requests.get(url)
-    assert page.status_code == 200
-
-    page = requests.get(url)
-    assert page.status_code == 200
-    with open(outputpath / "csrankings.csv", "wb") as f:
-        f.write(page.content)
-
-
-def download_uwaterloos_sunshines_old(year):
+def get_sunshines_old(year):
     prefix = "https://uwaterloo.ca/about/accountability/salary-disclosure-"
     url = f"{prefix}{year}"
     if (outputpath / f"sunshines{year}.csv").exists():
@@ -52,7 +38,7 @@ def download_uwaterloos_sunshines_old(year):
             writer.writerow([td.text.replace(",", " ") for td in tr.find_all("td")])
 
 
-def download_uwaterloos_sunshines_new(year):
+def get_sunshines_new(year):
     prefix = "https://uwaterloo.ca/about/accountability/salary-disclosure-"
     url = f"{prefix}{year}"
     if (outputpath / f"sunshines{year}.csv").exists():
@@ -75,18 +61,6 @@ def download_uwaterloos_sunshines_new(year):
             row = [td.text.replace(",", " ") for td in tr.find_all("td")]
             if any(row):
                 writer.writerow(row)
-
-
-download_csrankings()
-download_uwaterloos_sunshines_old(2020)
-download_uwaterloos_sunshines_old(2021)
-download_uwaterloos_sunshines_old(2022)
-download_uwaterloos_sunshines_new(2023)
-
-
-"""
-join of datasets
-"""
 
 
 def merge_sunshines():
@@ -125,7 +99,33 @@ def merge_sunshines():
             f.write(json.dumps(employee) + "\n")
 
 
-def join_datasets():
+get_sunshines_old(2020)
+get_sunshines_old(2021)
+get_sunshines_old(2022)
+get_sunshines_new(2023)
+merge_sunshines()
+
+
+"""
+joined sunshines with csrankings to find scholarids (not effective)
+"""
+
+
+def get_csrankings():
+    url = "https://raw.githubusercontent.com/emeryberger/CSrankings/refs/heads/gh-pages/csrankings.csv"
+    if (outputpath / "csrankings.csv").exists():
+        print("file already exists")
+        return
+    page = requests.get(url)
+    assert page.status_code == 200
+
+    page = requests.get(url)
+    assert page.status_code == 200
+    with open(outputpath / "csrankings.csv", "wb") as f:
+        f.write(page.content)
+
+
+def join_csrankings():
     if (outputpath / "sunshines-v2.jsonl").exists():
         print("file already exists")
         return
@@ -164,5 +164,5 @@ def join_datasets():
     print(f"found matches: {found_matches}")
 
 
-merge_sunshines()
-join_datasets()
+get_csrankings()
+join_csrankings()
