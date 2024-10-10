@@ -1,6 +1,8 @@
 import csv
 import json
+import random
 import re
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -172,12 +174,19 @@ join salary disclosures with semantic scholar
 """
 
 
-def join_sscholar():
+def join_sscholar(retry=False):
     sunshines = outputpath / "sunshines-v2.jsonl"
-    assert sunshines.exists()
+    if not retry and sunshines.exists():
+        print("file already exists")
+        return
     outfile = outputpath / "sunshines-v3.jsonl"
 
-    def is_cached(firstname, lastname):
+    def print_progress():
+        total = len(open(sunshines, "r").readlines())
+        current = len(open(outfile, "r").readlines())
+        print(f"progress: {current}/{total} ({current / total * 100:.2f}%)")
+
+    def is_cached(firstname, lastname):  # compute is cheaper than network
         content = open(outfile).read()
         for line in content.split("\n"):
             if len(line) == 0:
@@ -187,22 +196,36 @@ def join_sscholar():
                 return True
         return False
 
+    def fetch_retry(url, max_retries=20):
+        retries = 0
+        while retries < max_retries:
+            try:
+                page = requests.get(url)
+                page.raise_for_status()
+                return page
+            except:
+                retries += 1
+                print(f"\n\nretry: {retries}")
+                print_progress()
+                time.sleep(random.uniform(1, 3))
+        else:
+            print(f"max retries reached...")
+            exit(1)
+
     if not outfile.exists():
         open(outfile, "w").close()
 
-    with tqdm(open(outfile, "a")) as out:
-
-        for line in open(sunshines, "r"):
+    with open(outfile, "a") as out:
+        for line in tqdm(open(sunshines, "r")):
             employee = json.loads(line)
-            if is_cached(employee["firstname"], employee["lastname"]):  # compute is cheaper than network
-                print("cached")
+            if is_cached(employee["firstname"], employee["lastname"]):
                 continue
 
             url = "https://api.semanticscholar.org/graph/v1/author/search?query="
             name_encoded = (employee["lastname"].replace(" ", "+") + "+" + employee["firstname"].replace(" ", "+")).lower().strip()
             suffix = "&fields=authorId,externalIds,name,paperCount,citationCount,hIndex"
-            page = requests.get(url + name_encoded + suffix)
-            assert page.status_code == 200, f"status code: {page.status_code}"
+            query = url + name_encoded + suffix
+            page = fetch_retry(query)
             res = page.json()
             if (res["total"] <= 0) or (len(res["data"]) == 0):
                 continue
@@ -226,4 +249,5 @@ def join_sscholar():
             res = res[0]
             out.write(json.dumps({**employee, **res}) + "\n")
 
-join_sscholar()
+
+join_sscholar(retry=True)
