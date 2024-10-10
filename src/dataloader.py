@@ -166,3 +166,18 @@ def join_csrankings():
 
 get_csrankings()
 join_csrankings()
+
+
+
+"""
+joined with google scholar to find scholarids
+"""
+
+# https://scholar.google.com/citations?view_op=search_authors&mauthors=
+
+# https://api.semanticscholar.org/graph/v1/author/search?query='
+
+def join_gscholar():
+    print("yo")
+
+join_gscholar()

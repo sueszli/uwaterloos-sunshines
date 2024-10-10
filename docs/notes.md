@@ -19,4 +19,17 @@ stuff i've done in chronological order:
         - num uwaterloo rows csranking: 149
         - num all rows in sunshines: 2514
         - found matches: 107 (using threshold 0.8 - anything else would lead to duplicates)
+- joined with google scholar
+    - got ip blocked, doesn't have an api meant for information retrieval
+    - other related proxy services are pretty expensive
 
+
+<!-- 
+-   b) use csrankings → failures: 1122/2051 (54%) ❌
+-   c) use the semantic scholar api → failures: 0417/2051 (20%) ✅
+
+-   join salary table with the researcher's performance table ✅
+
+-   find correlation and visualize data from the joined table → parallel coordinates plot ✅
+
+-->

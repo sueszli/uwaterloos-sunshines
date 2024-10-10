@@ -43,6 +43,12 @@ Model:
 
 Report:
 
+# Question
+
+selecting dataset
+
+defining research question
+
 # Wrangle
 
 # Profile
