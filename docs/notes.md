@@ -19,9 +19,13 @@ stuff i've done in chronological order:
         - num uwaterloo rows csranking: 149
         - num all rows in sunshines: 2514
         - found matches: 107 (using threshold 0.8 - anything else would lead to duplicates)
-- joined with google scholar
+- failed joining with google scholar
     - got ip blocked, doesn't have an api meant for information retrieval
     - other related proxy services are pretty expensive
+    - endpoint: `https://scholar.google.com/citations?view_op=search_authors&mauthors=`
+- joined with semantic scholar
+    - endpoint: `https://api.semanticscholar.org/graph/v1/author/search?query=`
+
 
 
 <!-- 

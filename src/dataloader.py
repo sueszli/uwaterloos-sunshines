@@ -13,7 +13,7 @@ outputpath = Path("__file__").parent / "data"
 
 
 """
-uwaterloo salary disclosures, merged 2020-2023
+uwaterloo salary disclosures, merging years 2020-2023
 """
 
 
@@ -107,7 +107,7 @@ merge_sunshines()
 
 
 """
-joined sunshines with csrankings to find scholarids (not effective)
+joining sunshines with csrankings to find scholarids (not effective)
 """
 
 
@@ -170,14 +170,12 @@ join_csrankings()
 
 
 """
-joined with google scholar to find scholarids
+joining sunshines with semantic scholar to find scholarids (effective)
 """
 
-# https://scholar.google.com/citations?view_op=search_authors&mauthors=
+# https://api.semanticscholar.org/graph/v1/author/search?query=
 
-# https://api.semanticscholar.org/graph/v1/author/search?query='
-
-def join_gscholar():
+def join_sscholar():
     print("yo")
 
-join_gscholar()
+join_sscholar()
