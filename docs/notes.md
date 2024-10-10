@@ -9,3 +9,7 @@ stuff i've done in chronological order:
     - dropped unnecessary nested span tags
     - validated csv schema
 - validated all csv files with csvlint (cli tool)
+- merged all sunshine files into one
+    - cleaned strings
+    - employees have multiple entries, so it's timeseries data
+- merged csrankings with sunshine list

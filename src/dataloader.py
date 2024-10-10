@@ -1,7 +1,7 @@
 import csv
 import json
 from pathlib import Path
-
+import re
 import requests
 from bs4 import BeautifulSoup
 
@@ -91,37 +91,57 @@ def merge_sunshines():
         return
 
     sunshines = list(outputpath.glob("sunshines_*.csv"))
-    sunshines.sort(reverse=True)  # fall back to latest data first
-    employees = {}  # (fstname, lstname) -> [positions], [totalcomps]
+    employees = {}  # key: (firstname, lastname)
+
+    """
+    {
+        "firstname": str,
+        "lastname": str,
+        "years": [
+            {
+                "year": int,
+                "role": str,
+                "salary": float,
+                "benefits": float
+            }
+        ]
+    }
+    """
 
     for f in sunshines:
+        year = int(f.stem.split("_")[1])
+
         reader = csv.reader(open(f, "r"))
         next(reader)
+
         for row in reader:
-            if len(row) == 0:
+            row = [elem.strip() for elem in row]
+            row = [re.sub(r"\s+", " ", elem) for elem in row]
+
+            if (len(row) == 0) or any([len(elem) == 0 for elem in row]):
                 continue
 
-            # parse data
-            fstname = row[0].strip().upper()
-            lstname = row[1].strip().upper()
-            if not fstname or not lstname:
-                continue
+            fstname = row[0]
+            lstname = row[1]
+            role = row[2]
+            salary = float(row[3].replace(" ", "").replace("$", "").replace(",", ""))
+            benefits = float(row[4].replace(" ", "").replace("$", "").replace(",", ""))
 
-            role = row[2].strip()
-
-            salary = float(row[3].strip().replace(" ", "").replace("$", "").replace(",", ""))
-            benefits = float(row[4].strip().replace(" ", "").replace("$", "").replace(",", ""))
-            totalcomp = float(salary + benefits)
-
-            # insert if not exists
             if (fstname, lstname) not in employees:
-                employees[(fstname, lstname)] = [[], []]
-            employees[(fstname, lstname)][0].append(role)
-            employees[(fstname, lstname)][1].append(totalcomp)
+                employees[(fstname, lstname)] = {
+                    "firstname": fstname,
+                    "lastname": lstname,
+                    "years": []
+                }
+            employees[(fstname, lstname)]["years"].append({
+                "year": year,
+                "role": role,
+                "salary": salary,
+                "benefits": benefits
+            })
 
-    employees = [{"firstname": k[0], "lastname": k[1], "positions": v[0], "totalcomps": v[1]} for k, v in employees.items()]
-    with open(outputpath / "sunshines.json", "w") as f:
-        json.dump(employees, f, indent=4)
-
+    with open(outputpath / "sunshines.jsonl", "w") as f:
+        for employee in employees.values():
+            f.write(json.dumps(employee) + "\n")
 
 merge_sunshines()
