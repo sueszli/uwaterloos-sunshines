@@ -175,15 +175,15 @@ The following code snippet and chart illustrate the distribution of the dataset 
 
 ```bash
 $ find ./* -type f -exec wc -l {} +
-    1709 ./data/sunshines-final.csv
    29361 ./data/csrankings.csv
+    1709 ./data/sunshines-final.csv
     2514 ./data/sunshines-v1.jsonl
     2514 ./data/sunshines-v2.jsonl
     1709 ./data/sunshines-v3.jsonl
-    2140 ./data/sunshines2023.csv
-    1904 ./data/sunshines2022.csv
     1762 ./data/sunshines2020.csv
     1857 ./data/sunshines2021.csv
+    1904 ./data/sunshines2022.csv
+    2140 ./data/sunshines2023.csv
     ...
 ```
 
