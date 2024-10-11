@@ -54,3 +54,8 @@ stuff i've done in chronological order:
 - we have joined: sunshines x csrankings x semantic scholar data
 - converting jsonl to csv to speed up queries
 - dropped unnecessary fields
+- inferred sex with some distilbert model
+
+6) analysis
+
+...
