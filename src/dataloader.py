@@ -278,7 +278,7 @@ def get_sex(name: str) -> Optional[str]:
 
 
 def get_cluster(role: str) -> str:
-    inputpath = outputpath / "role_clusters.json"
+    inputpath = outputpath / "role-clusters.json"
     assert inputpath.exists()
 
     role = role.strip().replace(",", " ").replace(";", " ")
@@ -294,7 +294,7 @@ def get_cluster(role: str) -> str:
 
 def gen_role_clusters():
     sunshines = outputpath / "sunshines-v3.jsonl"
-    jsonoutputpath = outputpath / "role_clusters.json"
+    jsonoutputpath = outputpath / "role-clusters.json"
     if jsonoutputpath.exists():
         print("file already exists")
         return
@@ -352,7 +352,7 @@ def gen_role_clusters():
         json.dump(label_roles, f, indent=4)
 
     # visualize
-    pngoutputpath = outputpath / "assets" / "role_clusters.png"
+    pngoutputpath = outputpath / "assets" / "role-clusters.png"
     tsne = TSNE(n_components=2, random_state=seed)  # dim reduction for plotting
     reduced_embeddings = tsne.fit_transform(embeddings)
     plt.figure(figsize=(18, 8))
