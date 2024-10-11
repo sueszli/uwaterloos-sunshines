@@ -185,6 +185,8 @@ As the output shows, the initial merge of the 4 sunshine lists (each 2140, 1904,
 
 ![Sankey Diagram of file sizes after multiple merge and inner join operations.](data/assets/wrangle-sankey.png)
 
+
+
 # Profile Stage
 
 In this section we explore the data in detail, to completely understand its structure, and to discover any interesting patterns that can be found in there.
@@ -216,7 +218,7 @@ stuff i did:
 
 - used distillbert to infer sex
     
-    - you can use the male/female ratio diagram for this
+    - you can use the male/female ratio diagram for this insight or some other kind of language model related thing
 
 - used fuzzy matching algorithm to match names
 
