@@ -259,75 +259,7 @@ join_sscholar(retry=False)
 
 
 """
-cluster roles for preprocessing
-"""
-
-
-def mean_pooling(model_output, attention_mask):
-    # attention mask for correct averaging
-    token_embeddings = model_output[0]  # first elem of model_output contains all token embeddings
-    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-
-
-def get_embeddings(sentences: list[str]):
-    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
-    model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
-    device = get_device(disable_mps=False)
-
-    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")  # tokenize
-
-    model = model.to(device)
-    encoded_input = {key: value.to(device) for key, value in encoded_input.items()}
-
-    with torch.no_grad(), torch.inference_mode(), torch.amp.autocast(device_type=("cuda" if torch.cuda.is_available() else "cpu"), enabled=(torch.cuda.is_available())):
-        model_output = model(**encoded_input)
-        sentence_embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
-    sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
-
-    sentence_embeddings = sentence_embeddings.cpu().numpy()
-    return sentence_embeddings
-
-
-def get_role_clusters():
-    sunshines = outputpath / "sunshines-v3.jsonl"
-
-    roles = set()
-    for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
-        employee = json.loads(line)
-        for elem in employee["years"]:
-            role = elem["role"].strip().replace(",", " ").replace(";", " ")
-            role = str(re.sub(r"\s+", " ", role))
-            roles.add(role)
-    roles = list(roles)
-
-    print(f"num unique roles: {len(roles)}")
-
-    embeddings = get_embeddings(roles)
-    n_clusters = 10  # <--- adjust this
-    kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
-    cluster_labels = kmeans.fit_predict(embeddings)
-
-    # visualize
-    tsne = TSNE(n_components=2, random_state=seed)  # dim reduction for plotting
-    reduced_embeddings = tsne.fit_transform(embeddings)
-    plt.figure(figsize=(12, 8))
-    scatter = plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=cluster_labels, cmap="viridis")
-    plt.colorbar(scatter)
-    plt.title("Role Clusters")
-    plt.xlabel("t-SNE dimension 1")
-    plt.ylabel("t-SNE dimension 2")
-    plt.tight_layout()
-    plt.show()
-
-    # store in json so you can look up
-
-
-get_role_clusters()
-
-
-"""
-preprocessing
+preprocessing models
 """
 
 weightpath = Path("__file__").parent / "weights"
@@ -343,6 +275,87 @@ def get_sex(name: str) -> Optional[str]:
     if top1 not in ["Male", "Female"]:
         return None
     return "F" if top1 == "Female" else "M"
+
+
+def get_role_clusters():
+    sunshines = outputpath / "sunshines-v3.jsonl"
+    jsonoutputpath = outputpath / "role_clusters.json"
+    if jsonoutputpath.exists():
+        print("file already exists")
+        return
+
+    def mean_pooling(model_output, attention_mask):
+        # attention mask for correct averaging
+        token_embeddings = model_output[0]  # first elem of model_output contains all token embeddings
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+        return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+    def get_embeddings(sentences: list[str]):
+        tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
+        model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
+        device = get_device(disable_mps=False)
+
+        encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")  # tokenize
+
+        model = model.to(device)
+        encoded_input = {key: value.to(device) for key, value in encoded_input.items()}
+
+        with torch.no_grad(), torch.inference_mode(), torch.amp.autocast(device_type=("cuda" if torch.cuda.is_available() else "cpu"), enabled=(torch.cuda.is_available())):
+            model_output = model(**encoded_input)
+            sentence_embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
+        sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
+
+        sentence_embeddings = sentence_embeddings.cpu().numpy()
+        return sentence_embeddings
+
+    def get_role_clusters(embeddings, n_clusters):
+        kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+        cluster_labels = kmeans.fit_predict(embeddings)
+        return cluster_labels
+
+    roles = set()
+    for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
+        employee = json.loads(line)
+        for elem in employee["years"]:
+            role = elem["role"].strip().replace(",", " ").replace(";", " ")
+            role = str(re.sub(r"\s+", " ", role))
+            roles.add(role)
+    roles = list(roles)
+
+    embeddings = get_embeddings(roles)
+    num_clusters = 25  # chosen based on experience
+    labels = get_role_clusters(embeddings, n_clusters=num_clusters)
+
+    # get lookup table
+    label_roles = {}
+    for role, label in zip(roles, labels):
+        label = str(label)
+        if label not in label_roles:
+            label_roles[label] = []
+        label_roles[label].append(role)
+    with open(jsonoutputpath, "w") as f:
+        json.dump(label_roles, f, indent=4)
+
+    # visualize
+    pngoutputpath = outputpath / "assets" / "role_clusters.png"
+    tsne = TSNE(n_components=2, random_state=seed)  # dim reduction for plotting
+    reduced_embeddings = tsne.fit_transform(embeddings)
+    plt.figure(figsize=(18, 8))
+    scatter = plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=labels, cmap="viridis")
+    plt.colorbar(scatter)
+    plt.title("Role Clusters (Reduced dimensionality with t-SNE)")
+    plt.xlabel("t-SNE dimension 1")
+    plt.ylabel("t-SNE dimension 2")
+    plt.tight_layout()
+    plt.savefig(pngoutputpath)
+
+
+get_role_clusters()
+
+
+"""
+preprocessing
+"""
 
 
 def preprocess():

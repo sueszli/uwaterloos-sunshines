@@ -213,9 +213,13 @@ The tasks of this section are to:
 stuff i did:
 
 - used distillbert to infer sex
+    
+    - you can use the male/female ratio diagram for this
+
 - used fuzzy matching algorithm to match names
 
 - clustered roles
+    
     - initially tried some traditional nlp stuff with tf-idf vectorization, nltk and sklearn but the visualized clusteres were not very meaningful
     - then used sentence ebmeddings with the most popular library on huggingface and that was very successful
 
