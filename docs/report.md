@@ -1,6 +1,7 @@
 ---
 title: "Lab Report"
 subtitle: "186.868 Visual Data Science 2024W"
+date: "Code: https://github.com/sueszli/uwaterloos-sunshines"
 author: "11912007 - Yahya Jabary"
 documentclass: article
 papersize: a4
