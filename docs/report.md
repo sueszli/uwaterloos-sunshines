@@ -34,6 +34,8 @@ The tasks of this section are to:
     - The selected datasets must contain a sufficient amount of data rows.
 - Keep the length to 1-2 A4 pages
 
+This stage is dedicated to defining the research question, motivation, and context of the study. It also includes the selection of datasets and the methodology for combining them to address the research question. The primary goal is to provide a clear and concise overview of the project's scope and objectives.
+
 #### Motivation and Context
 
 Salary transparency is a complex and often contentious issue in the workplace. While it can promote equity and reduce discrimination, it may also foster jealousy and resentment among employees. The approach to salary disclosure varies significantly between European countries and North America, particularly in the context of public institutions and academia.
