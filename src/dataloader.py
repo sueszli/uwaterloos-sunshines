@@ -277,7 +277,22 @@ def get_sex(name: str) -> Optional[str]:
     return "F" if top1 == "Female" else "M"
 
 
-def get_role_clusters():
+def get_cluster(role: str) -> str:
+    inputpath = outputpath / "role_clusters.json"
+    assert inputpath.exists()
+
+    role = role.strip().replace(",", " ").replace(";", " ")
+    role = str(re.sub(r"\s+", " ", role))
+
+    with open(inputpath, "r") as f:
+        role_clusters = json.load(f)
+    for cluster, roles in role_clusters.items():
+        if role in roles:
+            return cluster
+    assert False, f"role not found: {role}"
+
+
+def gen_role_clusters():
     sunshines = outputpath / "sunshines-v3.jsonl"
     jsonoutputpath = outputpath / "role_clusters.json"
     if jsonoutputpath.exists():
@@ -350,7 +365,7 @@ def get_role_clusters():
     plt.savefig(pngoutputpath)
 
 
-get_role_clusters()
+gen_role_clusters()
 
 
 """
@@ -371,16 +386,24 @@ def preprocess():
         "paper_count",
         "citation_count",
         "h_index",
+        # 2020
         "role_2020",
+        "role_cluster_2020",
         "salary_2020",
         "benefits_2020",
+        # 2021
         "role_2021",
+        "role_cluster_2021",
         "salary_2021",
         "benefits_2021",
+        # 2022
         "role_2022",
+        "role_cluster_2022",
         "salary_2022",
         "benefits_2022",
+        # 2023
         "role_2023",
+        "role_cluster_2023",
         "salary_2023",
         "benefits_2023",
     ]
@@ -397,12 +420,14 @@ def preprocess():
                 if len(year_dic) == 0:
                     return {
                         f"role_{year}": None,
+                        f"role_cluster_{year}": None,
                         f"salary_{year}": None,
                         f"benefits_{year}": None,
                     }
                 year_dic = year_dic[0]
                 return {
                     f"role_{year}": year_dic["role"],
+                    f"role_cluster_{year}": get_cluster(year_dic["role"]),
                     f"salary_{year}": year_dic["salary"],
                     f"benefits_{year}": year_dic["benefits"],
                 }
