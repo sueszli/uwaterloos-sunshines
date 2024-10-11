@@ -52,11 +52,7 @@ Given our personal connection to the University of Waterloo, we have chosen to f
 
 The primary dataset for this study consists of the publicly available sunshine lists from the University of Waterloo. This dataset provides both tabular and time-series data, as it includes annual checkpoints. To enrich this information, we plan to join it with data from `csrankings.org`, which contains scholar IDs. These IDs can then be used to query additional resources such as Google Scholar and the Semantic Scholar API, providing more detailed information about the research output of individual employees.
 
-By combining these datasets and API resources, the study aims to investigate the correlation between compensation and academic performance at the University of Waterloo. While specific research questions are yet to be formulated due to the exploratory nature of the approach, potential areas of inquiry include:
-
-- The relationship between changes in compensation and role over time
-- Correlation between academic performance metrics and salary
-- Potential gender-based salary disparities, inferred through natural language processing techniques applied to employee names
+By combining these datasets and API resources, the study aims to investigate the correlation between compensation and academic performance at the University of Waterloo. While specific research questions are yet to be formulated due to the exploratory nature of the approach, potential areas of inquiry include: (1) The relationship between changes in compensation and role over time, (2) Correlation between academic performance metrics and salary and (3) Potential gender-based salary disparities, inferred through natural language processing techniques applied to employee names.
 
 We have selected the following data sources to support our study:
 
@@ -84,8 +80,6 @@ The tasks of this section are to:
 - Keep the length to 3/4 to 1 A4 page.
 
 This stage is dedicated to data wrangling and information retreival which involves combining multiple datasets, cleaning the data, and ensuring its quality. The primary goal is to prepare the data for further analysis and visualization, addressing any issues that may arise during the process. It is the foundation for the subsequent stages of the data science pipeline in which insights are derived and models are built.
-
-The accompanying code for this stage can be found in the `wrangle.py` script located in the `src` directory of the project repository.
 
 <!--
 
@@ -169,17 +163,17 @@ It's also worth mentioning that we have no certainty in whether the retrieved pe
 
 In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis.
 
-To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
+To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final (`v4`) dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
 
 The following code snippet and chart illustrate the distribution of the dataset before and after the cleaning and integration steps.
 
 ```bash
 $ find ./* -type f -exec wc -l {} +
    29361 ./data/csrankings.csv
-    1709 ./data/sunshines-final.csv
     2514 ./data/sunshines-v1.jsonl
     2514 ./data/sunshines-v2.jsonl
     1709 ./data/sunshines-v3.jsonl
+    1709 ./data/sunshines-v4.csv
     1762 ./data/sunshines2020.csv
     1857 ./data/sunshines2021.csv
     1904 ./data/sunshines2022.csv
@@ -198,8 +192,10 @@ In this section we explore the data in detail, to completely understand its stru
 The tasks of this section are to:
 
 - Find at least 3 informative insights in your dataset. For each one add a short text describing the insights plus one visualization.
-- Use a charting library, not fully-featured applications.
 - Keep the length to 3/4 to 1 A4 page per insight.
+
+
+
 
 # Model Stage
 
@@ -209,8 +205,23 @@ The tasks of this section are to:
 - describe the modeling process
 - Create one or more visualization(s) that describe the results of your model
     - How would you increase trust of your customers/colleagues in your modeling approach by using data visualization?
-- Use a charting library, not fully-featured applications.
 - Keep the length to 1-2 A4 pages.
+
+
+<!-- 
+
+stuff i did:
+
+- used distillbert to infer roles
+- used fuzzy matching algorithm to match names
+
+
+
+can also use some prediction model on the timeseries data stuff
+
+-->
+
+
 
 # Report Stage
 
