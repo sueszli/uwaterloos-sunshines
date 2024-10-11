@@ -189,8 +189,7 @@ $ find ./* -type f -exec wc -l {} +
 
 As the output shows, the initial merge of the 4 sunshine lists (each 2140, 1904, 1762, 1857 rows) resulted in a dataset with 2514 rows. By joining with CSRankings, we simply extended the dataset with features but didn't drop any rows. After fuzzy joining the dataset with the Semantic Scholar API for the final dataset however we lost 806 rows (= 2514 - 1708) or 32% of the data due to query misses.
 
-<!-- use a senkal flow chart where on each stage they get smaller, add a note explaining that we didn't drop an data -->
-
+![Sankey Diagram of file sizes after multiple merge and inner join operations.](data/assets/wrangle-sankey.png)
 
 # Profile Stage
 
