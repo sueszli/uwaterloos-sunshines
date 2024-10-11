@@ -32,6 +32,10 @@ from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 from tqdm import tqdm
 from transformers import pipeline
+from utils import set_env
+
+
+set_env(seed=41)
 
 outputpath = Path("__file__").parent / "data"
 
@@ -277,6 +281,10 @@ weightpath = Path("__file__").parent / "weights"
 if not weightpath.exists():
     weightpath.mkdir()
 gender_classifier = pipeline("text-classification", model="padmajabfrl/Gender-Classification", model_kwargs={"cache_dir": weightpath})
+nltk.download('punkt', download_dir=weightpath)
+nltk.download('stopwords', download_dir=weightpath)
+nltk.download('punkt_tab', download_dir=weightpath)
+nltk.data.path = [weightpath]
 
 
 def preprocess():
@@ -324,6 +332,10 @@ def preprocess():
                     return None
                 return "F" if top1 == "Female" else "M"
 
+            # 
+            # pivot wider
+            # 
+
             def flatmap(year: int):
                 year_dic = [elem for elem in employee["years"] if elem["year"] == year]
                 if len(year_dic) == 0:
@@ -367,41 +379,19 @@ preprocess()
 modeling
 """
 
-# too many roles, use some machine learning model to group them
-# https://www.perplexity.ai/search/i-have-a-list-of-roles-that-i-qCcmBXjwQjC0BQbq0SM0LA#0
 
-def set_env(seed: int = -1) -> None:
-    if seed == -1:
-        seed = secrets.randbelow(1_000_000_000)
-
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
-    torch.backends.cuda.matmul.allow_tf32 = True
-    torch.backends.cudnn.allow_tf32 = True
-    torch.set_float32_matmul_precision("high")
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
-
-nltk.download('punkt', download_dir=weightpath)
-nltk.download('stopwords', download_dir=weightpath)
-nltk.download('punkt_tab', download_dir=weightpath)
-nltk.data.path = [weightpath]
-
-def role_clustering():
+def get_role_clusters():
     sunshines = outputpath / "sunshines-v3.jsonl"
     # outfile = outputpath / "sunshines-v4.csv"
+    
     roles = set()
     for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
         employee = json.loads(line)
         for elem in employee["years"]:
             roles.add(elem["role"])
     roles = list(roles)
+
+
 
     def preprocess_text(text):
         text = text.lower()
@@ -443,5 +433,7 @@ def role_clustering():
         for role in cluster_roles[:5]:  # Print first 5 roles in each cluster
             print(role)
 
+    # store in json so you can look up
 
-role_clustering()
+
+get_role_clusters()
