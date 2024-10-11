@@ -258,9 +258,9 @@ if not weightpath.exists():
 gender_classifier = pipeline("text-classification", model="padmajabfrl/Gender-Classification", model_kwargs={"cache_dir": weightpath})
 
 
-def get_final():
+def preprocess():
     sunshines = outputpath / "sunshines-v3.jsonl"
-    outfile = outputpath / "sunshines-final.csv"
+    outfile = outputpath / "sunshines-v4.csv"
     if outfile.exists():
         print("file already exists")
         return
@@ -335,4 +335,14 @@ def get_final():
             writer.writerow([new_employee[key] for key in schema])
 
 
-get_final()
+preprocess()
+
+
+"""
+modeling
+"""
+
+
+# too many roles, use some machine learning model to group them
+
+# https://www.perplexity.ai/search/is-there-a-way-to-group-these-0HH4PWwiQTmQaFL3Rh9F3A#0
