@@ -79,9 +79,99 @@ The tasks of this section are to:
     - How did you join the datasets? Which keys did you use to join the data? Did all keys match? Did you have to introduce new keys?
 - Solve issues like formatting issues, missing data, faulty values, and non-matching keys.
     - Which data cleaning steps have been necessary? Did you experience data issues, and if so, which ones? How did you solve them? Did you use automated methods? Did you use visualization to inspect data issues?
+
 - Visually show and explain the data quality of your dataset (for example, before and after cleaning steps). Come up with your own, creative, solution here.
+
+<!-- use a senkal flow chart where on each stage they get smaller, add a note explaining that we didn't drop an data -->
+
 - Use a charting library, not fully-featured applications.
 - Keep the length to 3/4 to 1 A4 page.
+
+This stage is dedicated to data wrangling and information retreival which involves combining multiple datasets, cleaning the data, and ensuring its quality. The primary goal is to prepare the data for further analysis and visualization, addressing any issues that may arise during the process. It is the foundation for the subsequent stages of the data science pipeline in which insights are derived and models are built.
+
+The accompanying code for this stage can be found in the `wrangle.py` script located in the `src` directory of the project repository.
+
+<!--
+
+steps:
+
+1) scrape uwaterloo's sunshine list for 2020-2023
+
+- converted html to csv using beautifulsoup
+- dropped unnecessary nested span tags
+- validated csv schema
+- merged all sunshine files into one (partially as timeseries data in jsonl format)
+- cleaned strings
+- validated all csv files with csvlint (cli tool)
+
+2) downloaded csrankings data and merged with sunshine list
+
+- source: https://github.com/emeryberger/CSrankings/blob/gh-pages/csrankings.csv
+- schema: name,affiliation,homepage,scholarid
+- quarterly updated data, scholars can add pull requests to update their affiliation
+- used fuzzy matching to match names, dropped non uwaterloo affiliations
+- very few matches
+    - num all rows in csrankings: 29360
+    - num uwaterloo rows csranking: 149
+    - num all rows in sunshines: 2514
+    - found matches: 107 (using threshold 0.8 - anything else would lead to duplicates) -> meaning 107/149 csrankings matched with sunshine list which is not bad
+- stored an `csrankings_scholarids` field that is completely useless
+
+3) failed joining with google scholar
+
+- endpoint: `https://scholar.google.com/citations?view_op=search_authors&mauthors=`
+- got ip blocked, doesn't have an api meant for information retrieval
+- other related proxy services are pretty expensive
+
+4) joined with semantic scholar
+
+- endpoint: `https://api.semanticscholar.org/graph/v1/author/search?query=`
+- switching ips via vpn was helpful
+- fields:
+    - `affiliations` field was always empty although that would have been most useful
+    - `homepage` field was also alwyas empty
+- searched for researchers via api
+    - filtered by fuzzy name matching (threshold 0.8)
+    - filtered by options with external ids (if there were any) like dblp, orcid, etc.
+    - took the option with the highest combined citation count, paper count, h-index → this definitely leads to some errors but it's the best heuristic i could come up with
+- new fields:
+    - `authorId` (to look up more stuff via the semantic scholar api)
+    - `externalIds`: ie. mostly dblp if there are any (useless)
+    - `name`: the name we matched with (useless)
+    - `paperCount`, `citationCount`, `hIndex`
+    - there are no other fields we could check
+- data loss
+    - only 1708/2514 (68%) of employees could be joined with semantic scholar
+    - not all of that is data loss, because some employees are not researchers
+
+5) preprocessing
+
+- we have joined: sunshines x csrankings x semantic scholar data
+- converting jsonl to csv to speed up queries
+- dropped unnecessary fields
+- inferred sex with some distilbert model
+
+-->
+
+In this stage, we embarked on a detailed data integration and cleaning journey to create a comprehensive dataset by joining multiple sources. Our primary goal was to merge datasets from the University of Waterloo's salary disclosures, CSRankings, and Semantic Scholar to gain insights into the academic and financial profiles of university employees. This task involved several intricate steps, particularly focusing on fuzzy matching techniques for effective data merging.
+
+Initially, we scraped the University of Waterloo's sunshine list for the years 2020 to 2023. Using BeautifulSoup, we converted HTML tables into CSV format, ensuring that unnecessary nested span tags were removed for cleaner data. We validated the CSV schema to maintain consistency across files and merged these into a single dataset, partially formatted as timeseries data in JSONL format. String cleaning and validation using CSVLint were crucial steps in preparing this dataset for further integration.
+
+Our next step involved downloading the CSRankings data, which we aimed to merge with the sunshine list. The CSRankings dataset, sourced from a GitHub repository, included fields such as name, affiliation, homepage, and scholar ID. Given that this dataset is updated quarterly and allows scholars to update their affiliations via pull requests, it was vital to ensure accuracy in matching. We employed fuzzy matching techniques to align names between datasets, setting a threshold of 0.8 to avoid duplicates. Although this method resulted in relatively few matches – 107 out of 149 University of Waterloo entries in CSRankings matched with the sunshine list – it was an effective approach given the complexity of name variations.
+
+The fuzzy matching process was particularly interesting as it required balancing precision and recall. By using a threshold of 0.8, we minimized false positives while still capturing relevant matches. This technique proved essential in dealing with variations in name spellings and formats across datasets.
+
+Our attempts to integrate Google Scholar data were unsuccessful due to IP blocking issues and the lack of a dedicated API for information retrieval. This setback highlighted the challenges associated with accessing certain online resources without incurring significant costs through proxy services.
+
+We then turned to Semantic Scholar for additional data enrichment. By leveraging its API and employing VPNs to manage IP switching, we were able to search for researchers using fuzzy name matching with a similar threshold of 0.8. Although some fields like affiliations and homepage were consistently empty – limiting their utility – we focused on extracting valuable metrics such as paper count, citation count, and h-index. These metrics provided insights into the academic impact of researchers who could be matched with the sunshine list.
+
+Despite these efforts, there was notable data loss; only 68% of employees from the sunshine list could be joined with Semantic Scholar data. This was partly due to some employees not being researchers or not having sufficient presence in academic databases.
+
+In our preprocessing phase, we combined data from all sources into a unified dataset: sunshines x CSRankings x Semantic Scholar. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis. To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns.
+
+In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
+
+This project underscored the complexities inherent in data integration tasks involving diverse datasets with varying structures and levels of completeness. Fuzzy matching emerged as a powerful tool for bridging gaps where exact matches were not feasible due to inconsistencies in naming conventions or missing identifiers. Through careful cleaning, validation, and innovative matching techniques, we successfully created a robust dataset capable of supporting detailed analyses of academic and financial trends at the University of Waterloo.
 
 # Profile Stage
 
