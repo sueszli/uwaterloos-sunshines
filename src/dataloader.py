@@ -1,23 +1,3 @@
-import functools
-import os
-import random
-import secrets
-import time
-
-import numpy as np
-import torch
-import numpy as np
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import PorterStemmer
-import re
-import nltk
 import csv
 import json
 import random
@@ -26,16 +6,22 @@ import time
 from pathlib import Path
 from typing import Optional
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import requests
+import torch
+import torch.nn.functional as F
 from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
 from tqdm import tqdm
-from transformers import pipeline
-from utils import set_env
+from transformers import AutoModel, AutoTokenizer, pipeline
 
+from utils import get_device, set_env
 
-set_env(seed=41)
+seed = 41
+set_env(seed=seed)
 
 outputpath = Path("__file__").parent / "data"
 
@@ -273,18 +259,90 @@ join_sscholar(retry=False)
 
 
 """
-preprocessing
+cluster roles for preprocessing
 """
 
+
+def mean_pooling(model_output, attention_mask):
+    # attention mask for correct averaging
+    token_embeddings = model_output[0]  # first elem of model_output contains all token embeddings
+    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+    return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+
+def get_embeddings(sentences: list[str]):
+    tokenizer = AutoTokenizer.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
+    model = AutoModel.from_pretrained("sentence-transformers/all-MiniLM-L6-v2", cache_dir=weightpath)
+    device = get_device(disable_mps=False)
+
+    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors="pt")  # tokenize
+
+    model = model.to(device)
+    encoded_input = {key: value.to(device) for key, value in encoded_input.items()}
+
+    with torch.no_grad(), torch.inference_mode(), torch.amp.autocast(device_type=("cuda" if torch.cuda.is_available() else "cpu"), enabled=(torch.cuda.is_available())):
+        model_output = model(**encoded_input)
+        sentence_embeddings = mean_pooling(model_output, encoded_input["attention_mask"])
+    sentence_embeddings = F.normalize(sentence_embeddings, p=2, dim=1)
+
+    sentence_embeddings = sentence_embeddings.cpu().numpy()
+    return sentence_embeddings
+
+
+def get_role_clusters():
+    sunshines = outputpath / "sunshines-v3.jsonl"
+
+    roles = set()
+    for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
+        employee = json.loads(line)
+        for elem in employee["years"]:
+            role = elem["role"].strip().replace(",", " ").replace(";", " ")
+            role = str(re.sub(r"\s+", " ", role))
+            roles.add(role)
+    roles = list(roles)
+
+    print(f"num unique roles: {len(roles)}")
+
+    embeddings = get_embeddings(roles)
+    n_clusters = 10  # <--- adjust this
+    kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+    cluster_labels = kmeans.fit_predict(embeddings)
+
+    # visualize
+    tsne = TSNE(n_components=2, random_state=seed)  # dim reduction for plotting
+    reduced_embeddings = tsne.fit_transform(embeddings)
+    plt.figure(figsize=(12, 8))
+    scatter = plt.scatter(reduced_embeddings[:, 0], reduced_embeddings[:, 1], c=cluster_labels, cmap="viridis")
+    plt.colorbar(scatter)
+    plt.title("Role Clusters")
+    plt.xlabel("t-SNE dimension 1")
+    plt.ylabel("t-SNE dimension 2")
+    plt.tight_layout()
+    plt.show()
+
+    # store in json so you can look up
+
+
+get_role_clusters()
+
+
+"""
+preprocessing
+"""
 
 weightpath = Path("__file__").parent / "weights"
 if not weightpath.exists():
     weightpath.mkdir()
+
 gender_classifier = pipeline("text-classification", model="padmajabfrl/Gender-Classification", model_kwargs={"cache_dir": weightpath})
-nltk.download('punkt', download_dir=weightpath)
-nltk.download('stopwords', download_dir=weightpath)
-nltk.download('punkt_tab', download_dir=weightpath)
-nltk.data.path = [weightpath]
+
+
+def get_sex(name: str) -> Optional[str]:
+    preds = gender_classifier(name)
+    top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
+    if top1 not in ["Male", "Female"]:
+        return None
+    return "F" if top1 == "Female" else "M"
 
 
 def preprocess():
@@ -320,21 +378,6 @@ def preprocess():
 
         for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
             employee = json.loads(line)
-
-            # 
-            # model inference
-            # 
-
-            def get_sex(name: str) -> Optional[str]:
-                preds = gender_classifier(name)
-                top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
-                if top1 not in ["Male", "Female"]:
-                    return None
-                return "F" if top1 == "Female" else "M"
-
-            # 
-            # pivot wider
-            # 
 
             def flatmap(year: int):
                 year_dic = [elem for elem in employee["years"] if elem["year"] == year]
@@ -373,67 +416,3 @@ def preprocess():
 
 
 preprocess()
-
-
-"""
-modeling
-"""
-
-
-def get_role_clusters():
-    sunshines = outputpath / "sunshines-v3.jsonl"
-    # outfile = outputpath / "sunshines-v4.csv"
-    
-    roles = set()
-    for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
-        employee = json.loads(line)
-        for elem in employee["years"]:
-            roles.add(elem["role"])
-    roles = list(roles)
-
-
-
-    def preprocess_text(text):
-        text = text.lower()
-        text = re.sub(r'[^a-zA-Z\s]', '', text)
-        tokens = word_tokenize(text)
-        stop_words = set(stopwords.words('english'))
-        tokens = [word for word in tokens if word not in stop_words]
-        stemmer = PorterStemmer()
-        tokens = [stemmer.stem(word) for word in tokens]
-        return ' '.join(tokens)
-
-    preprocessed_roles = [preprocess_text(role) for role in roles]
-
-    # tf-idf vectorization
-    vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform(preprocessed_roles)
-
-    # dimensionality reduction
-    tsne = TSNE(n_components=2, random_state=42)
-    tsne_results = tsne.fit_transform(tfidf_matrix.toarray())
-
-    # clustering
-    kmeans = KMeans(n_clusters=10, random_state=42)
-    cluster_labels = kmeans.fit_predict(tfidf_matrix)
-
-    # visualization
-    plt.figure(figsize=(12, 8))
-    scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=cluster_labels, cmap='viridis')
-    plt.colorbar(scatter)
-    plt.title('Role Clusters')
-    plt.xlabel('t-SNE 1')
-    plt.ylabel('t-SNE 2')
-    plt.show()
-    # store the plot
-
-    for cluster in range(10):
-        print(f"\nCluster {cluster}:")
-        cluster_roles = [roles[i] for i in range(len(roles)) if cluster_labels[i] == cluster]
-        for role in cluster_roles[:5]:  # Print first 5 roles in each cluster
-            print(role)
-
-    # store in json so you can look up
-
-
-get_role_clusters()
