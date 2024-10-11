@@ -161,7 +161,7 @@ It's also worth mentioning that we have no certainty in whether the retrieved pe
 
 #### Data Preprocessing and Quality Assurance
 
-In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis.
+In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis (which will be discussed in more detail in the "Model Stage" chapter of this report).
 
 To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final (`v4`) dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
 

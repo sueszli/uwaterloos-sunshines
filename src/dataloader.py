@@ -1,3 +1,23 @@
+import functools
+import os
+import random
+import secrets
+import time
+
+import numpy as np
+import torch
+import numpy as np
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+import re
+import nltk
 import csv
 import json
 import random
@@ -73,6 +93,7 @@ def merge_sunshines():
         return
 
     sunshines = list(outputpath.glob("sunshines*.csv"))
+    sunshines = [elem for elem in sunshines if not re.match(r"sunshines-v\d+", elem.stem)]
     employees = {}  # key: (firstname, lastname)
 
     for f in sunshines:
@@ -292,6 +313,10 @@ def preprocess():
         for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
             employee = json.loads(line)
 
+            # 
+            # model inference
+            # 
+
             def get_sex(name: str) -> Optional[str]:
                 preds = gender_classifier(name)
                 top1 = sorted(preds, key=lambda x: x["score"], reverse=True)[0]["label"]
@@ -299,7 +324,7 @@ def preprocess():
                     return None
                 return "F" if top1 == "Female" else "M"
 
-            def get_year(year: int):
+            def flatmap(year: int):
                 year_dic = [elem for elem in employee["years"] if elem["year"] == year]
                 if len(year_dic) == 0:
                     return {
@@ -322,10 +347,10 @@ def preprocess():
                 "paper_count": employee["paperCount"],
                 "citation_count": employee["citationCount"],
                 "h_index": employee["hIndex"],
-                **get_year(2020),
-                **get_year(2021),
-                **get_year(2022),
-                **get_year(2023),
+                **flatmap(2020),
+                **flatmap(2021),
+                **flatmap(2022),
+                **flatmap(2023),
             }
 
             for key in new_employee:
@@ -342,7 +367,81 @@ preprocess()
 modeling
 """
 
-
 # too many roles, use some machine learning model to group them
+# https://www.perplexity.ai/search/i-have-a-list-of-roles-that-i-qCcmBXjwQjC0BQbq0SM0LA#0
 
-# https://www.perplexity.ai/search/is-there-a-way-to-group-these-0HH4PWwiQTmQaFL3Rh9F3A#0
+def set_env(seed: int = -1) -> None:
+    if seed == -1:
+        seed = secrets.randbelow(1_000_000_000)
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.set_float32_matmul_precision("high")
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
+
+nltk.download('punkt', download_dir=weightpath)
+nltk.download('stopwords', download_dir=weightpath)
+nltk.download('punkt_tab', download_dir=weightpath)
+nltk.data.path = [weightpath]
+
+def role_clustering():
+    sunshines = outputpath / "sunshines-v3.jsonl"
+    # outfile = outputpath / "sunshines-v4.csv"
+    roles = set()
+    for line in tqdm(open(sunshines, "r"), total=len(open(sunshines, "r").readlines())):
+        employee = json.loads(line)
+        for elem in employee["years"]:
+            roles.add(elem["role"])
+    roles = list(roles)
+
+    def preprocess_text(text):
+        text = text.lower()
+        text = re.sub(r'[^a-zA-Z\s]', '', text)
+        tokens = word_tokenize(text)
+        stop_words = set(stopwords.words('english'))
+        tokens = [word for word in tokens if word not in stop_words]
+        stemmer = PorterStemmer()
+        tokens = [stemmer.stem(word) for word in tokens]
+        return ' '.join(tokens)
+
+    preprocessed_roles = [preprocess_text(role) for role in roles]
+
+    # tf-idf vectorization
+    vectorizer = TfidfVectorizer()
+    tfidf_matrix = vectorizer.fit_transform(preprocessed_roles)
+
+    # dimensionality reduction
+    tsne = TSNE(n_components=2, random_state=42)
+    tsne_results = tsne.fit_transform(tfidf_matrix.toarray())
+
+    # clustering
+    kmeans = KMeans(n_clusters=10, random_state=42)
+    cluster_labels = kmeans.fit_predict(tfidf_matrix)
+
+    # visualization
+    plt.figure(figsize=(12, 8))
+    scatter = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=cluster_labels, cmap='viridis')
+    plt.colorbar(scatter)
+    plt.title('Role Clusters')
+    plt.xlabel('t-SNE 1')
+    plt.ylabel('t-SNE 2')
+    plt.show()
+    # store the plot
+
+    for cluster in range(10):
+        print(f"\nCluster {cluster}:")
+        cluster_roles = [roles[i] for i in range(len(roles)) if cluster_labels[i] == cluster]
+        for role in cluster_roles[:5]:  # Print first 5 roles in each cluster
+            print(role)
+
+
+role_clustering()
