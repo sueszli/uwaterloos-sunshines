@@ -59,7 +59,7 @@ By combining these datasets and API resources, the study aims to investigate the
 We have selected the following data sources to support our study:
 
 - University of Waterloo Salary disclosure for 2020-2023
-- CS Rankings CSV based on the csrankings.org Github repository
+- CS Rankings CSV based on the `csrankings.org` Github repository
 - Google Scholar API
 - Semantic Scholar API
 
