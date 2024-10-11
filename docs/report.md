@@ -79,11 +79,7 @@ The tasks of this section are to:
     - How did you join the datasets? Which keys did you use to join the data? Did all keys match? Did you have to introduce new keys?
 - Solve issues like formatting issues, missing data, faulty values, and non-matching keys.
     - Which data cleaning steps have been necessary? Did you experience data issues, and if so, which ones? How did you solve them? Did you use automated methods? Did you use visualization to inspect data issues?
-
 - Visually show and explain the data quality of your dataset (for example, before and after cleaning steps). Come up with your own, creative, solution here.
-
-<!-- use a senkal flow chart where on each stage they get smaller, add a note explaining that we didn't drop an data -->
-
 - Use a charting library, not fully-featured applications.
 - Keep the length to 3/4 to 1 A4 page.
 
@@ -153,7 +149,7 @@ steps:
 
 -->
 
-In this stage, we embarked on a detailed data integration and cleaning journey to create a comprehensive dataset by joining multiple sources. Our primary goal was to merge datasets from the University of Waterloo's salary disclosures, CSRankings, and Semantic Scholar to gain insights into the academic and financial profiles of university employees. This task involved several intricate steps, particularly focusing on fuzzy matching techniques for effective data merging.
+#### Data Retrieval and Integration
 
 Initially, we scraped the University of Waterloo's sunshine list for the years 2020 to 2023. Using BeautifulSoup, we converted HTML tables into CSV format, ensuring that unnecessary nested span tags were removed for cleaner data. We validated the CSV schema to maintain consistency across files and merged these into a single dataset, partially formatted as timeseries data in JSONL format. String cleaning and validation using CSVLint were crucial steps in preparing this dataset for further integration.
 
@@ -167,11 +163,34 @@ We then turned to Semantic Scholar for additional data enrichment. By leveraging
 
 Despite these efforts, there was notable data loss; only 68% of employees from the sunshine list could be joined with Semantic Scholar data. This was partly due to some employees not being researchers or not having sufficient presence in academic databases.
 
-In our preprocessing phase, we combined data from all sources into a unified dataset: sunshines x CSRankings x Semantic Scholar. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis. To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns.
+It's also worth mentioning that we have no certainty in whether the retrieved performance metrics from the API just based on the name matching are correct as these are not unique identifiers. This could lead to potential errors in the analysis, which we will need to consider in the subsequent stages and interpretations – but we can with certainty say that this is the best heuristic we could come up with given the publicly available data.
 
-In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
+#### Data Preprocessing and Quality Assurance
 
-This project underscored the complexities inherent in data integration tasks involving diverse datasets with varying structures and levels of completeness. Fuzzy matching emerged as a powerful tool for bridging gaps where exact matches were not feasible due to inconsistencies in naming conventions or missing identifiers. Through careful cleaning, validation, and innovative matching techniques, we successfully created a robust dataset capable of supporting detailed analyses of academic and financial trends at the University of Waterloo.
+In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis.
+
+To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
+
+The following code snippet and chart illustrate the distribution of the dataset before and after the cleaning and integration steps.
+
+```bash
+$ find ./* -type f -exec wc -l {} +
+    1709 ./data/sunshines-final.csv
+   29361 ./data/csrankings.csv
+    2514 ./data/sunshines-v1.jsonl
+    2514 ./data/sunshines-v2.jsonl
+    1709 ./data/sunshines-v3.jsonl
+    2140 ./data/sunshines2023.csv
+    1904 ./data/sunshines2022.csv
+    1762 ./data/sunshines2020.csv
+    1857 ./data/sunshines2021.csv
+    ...
+```
+
+As the output shows, the initial merge of the 4 sunshine lists (each 2140, 1904, 1762, 1857 rows) resulted in a dataset with 2514 rows. By joining with CSRankings, we simply extended the dataset with features but didn't drop any rows. After fuzzy joining the dataset with the Semantic Scholar API for the final dataset however we lost 806 rows (= 2514 - 1708) or 32% of the data due to query misses.
+
+<!-- use a senkal flow chart where on each stage they get smaller, add a note explaining that we didn't drop an data -->
+
 
 # Profile Stage
 
