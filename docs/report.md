@@ -239,17 +239,25 @@ The tasks of this section are to:
 - Find at least 3 informative insights in your dataset. For each one add a short text describing the insights plus one visualization.
 - Keep the length to $\frac{3}{4}$ to 1 A4 page per insight.
 
+\ref{fig:heatmapfull}
 
+\ref{fig:heatmap}
 
-![Heatmap of Correlation Matrix](data/assets/heatmap-full.png)
+\ref{fig:mftotalcomp}
 
-![Heatmap of Correlation Matrix](data/assets/heatmap-slim.png)
+\ref{fig:timeseriesdelta}
 
-![MF Totalcomp Ratio](data/assets/mf-totalcomp-ratio.png)
+\ref{fig:timeseries}
 
-![Timeseries](data/assets/timeseries-delta.png)
+![Heatmap of Correlation Matrix.\label{fig:heatmapfull}](data/assets/heatmap-full.png)
 
-![Timeseries](data/assets/timeseries.png)
+![Heatmap of Correlation Matrix.\label{fig:heatmap}](data/assets/heatmap-slim.png)
+
+![MF Totalcomp Ratio.\label{fig:mftotalcomp}](data/assets/mf-totalcomp-ratio.png)
+
+![Timeseries.\label{fig:timeseriesdelta}](data/assets/timeseries-delta.png)
+
+![Timeseries.\label{fig:timeseries}](data/assets/timeseries.png)
 
 
 # Model Stage
@@ -262,9 +270,13 @@ The tasks of this section are to:
     - How would you increase trust of your customers/colleagues in your modeling approach by using data visualization?
 - Keep the length to 1-2 A4 pages.
 
-![Latent Representation Clustering of Roles](data/assets/role-clusters.png)
+\ref{fig:rolesclusters}
 
-![Sex inference based on name via Text Classification](data/assets/mf-ratio.png)
+\ref{fig:cls}
+
+![Latent Representation Clustering of Roles.\label{fig:rolesclusters}](data/assets/role-clusters.png)
+
+![Sex inference based on name via Text Classification.\label{fig:cls}](data/assets/mf-ratio.png)
 
 <!-- 
 
