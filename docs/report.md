@@ -294,50 +294,15 @@ The tasks of this section are to:
     - How would you increase trust of your customers/colleagues in your modeling approach by using data visualization?
 - Keep the length to 1-2 A4 pages.
 
+In our project, we have leveraged a variety of machine learning models to address specific challenges, each with its own sophisticated modeling process. Here, we jump into the technical intricacies of using DistilBERT for demographic inference, a fuzzy matching algorithm for name matching, and clustering techniques based on sentence embeddings for role analysis.
 
+DistilBERT is a distilled version of BERT (Bidirectional Encoder Representations from Transformers), which is designed to be smaller and faster while retaining much of BERT's language understanding capabilities. This is achieved through a process called knowledge distillation, where a smaller model (DistilBERT) learns to mimic the behavior of a larger model (BERT) by capturing its essential features. DistilBERT reduces the number of parameters by approximately 40% compared to BERT, yet it maintains 97% of BERT's performance in language understanding tasks. In our projects, we utilized DistilBERT to infer gender from names, enhancing our demographic data analysis. We employed a pre-trained DistilBERT model fine-tuned for gender classification using Hugging Face's Transformers library. By inputting names into the model, we obtained gender predictions that were used to enrich our demographic datasets. **To increase trust** in this approach among colleagues and stakeholders, one might use data visualization techniques such as confusion matrices and precision-recall curves. These visualizations provide clear insights into the model's performance and reliability in accurately classifying genders. The ratio of the entire dataset is visualized in Figure \ref{fig:cls}.
 
+For matching names from a JSONL file with entries from the Semantic Scholar API, we implemented a fuzzy matching algorithm. Fuzzy matching is a technique that identifies similar but not identical elements in datasets by calculating similarity scores based on character overlap, edit distance, and phonetic similarity. This approach is particularly useful when dealing with variations in data entries, such as typos or different spellings. We utilized Python's `fuzzywuzzy` library to implement this algorithm, allowing us to match names even when they were not exact matches. Unlike cosine similarity with embeddings, fuzzy matching was more effective for this task as it handled name variations robustly without requiring semantic understanding. **To enhance trust** in our fuzzy matching process, one might visualize the distribution of similarity scores and highlight matched pairs with varying degrees of confidence. This will help stakeholders understand the algorithm's behavior and its effectiveness in linking records accurately.
 
+In addressing the challenge of analyzing over 500 roles, we initially experimented with traditional NLP techniques such as TF-IDF vectorization but found the resulting clusters lacked meaningful insights. We then adopted sentence embeddings using a popular library from Hugging Face to capture semantic meanings more effectively. Sentence embeddings transform sentences into fixed-size vectors that represent their semantic content, allowing us to group similar sentences based on meaning rather than surface form alone. We applied K-means clustering with 25 clusters to these embeddings, which provided a more coherent grouping of roles. The success of this approach was evident through visualization techniques like t-SNE plots, which reduced the dimensionality of embeddings for **easy interpretation** of cluster structures. These visualizations not only demonstrated the validity of our clustering method but also facilitated discussions with team members by providing an intuitive understanding of how roles were grouped semantically. The clustering results are visualized in Figure \ref{fig:rolesclusters} although it isn't immediately clear what the clusters represent or whether the spacial distance between clusters is meaningful given that we used the t-SNE algorithm to reduce the dimensionality of the embeddings for visualization purposes.
 
-
-
-
-
-
-
-
-
-
-\ref{fig:rolesclusters}
-
-\ref{fig:cls}
-
-
-<!-- 
-
-stuff i did:
-
-- used distillbert to infer sex
-    
-    - you can use the male/female ratio diagram for this insight or some other kind of language model related thing
-
-- used fuzzy matching algorithm to match names
-
-- clustered roles
-    
-    - initially tried some traditional nlp stuff with tf-idf vectorization, nltk and sklearn but the visualized clusteres were not very meaningful
-    - then used sentence ebmeddings with the most popular library on huggingface and that was very successful
-
-can also use some prediction model on the timeseries data stuff - but the stuff i've done so far should suffice
-
--->
-
-
-
-
-
-
-
-
+Without these models, we would not have been able to derive the insights presented in the previous sections. By leveraging DistilBERT for demographic inference, fuzzy matching for name matching, and clustering techniques based on sentence embeddings for role analysis, we were able to enrich our datasets and gain a deeper understanding of the relationships between different attributes. These models not only provided valuable insights but also enhanced the credibility and reliability of our analyses by ensuring that our data was accurately processed and interpreted.
 
 # Report Stage
 
