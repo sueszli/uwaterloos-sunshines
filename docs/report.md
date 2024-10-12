@@ -1,8 +1,10 @@
 ---
 title: "Lab Report"
 subtitle: "186.868 Visual Data Science 2024W"
-date: "Code: [`github.com/sueszli/uwaterloos-sunshines`](https://github.com/sueszli/uwaterloos-sunshines)"
-author: "11912007 - Yahya Jabary"
+date: "11912007 - Yahya Jabary"
+author:
+    - "Code: [`github.com/sueszli/uwaterloos-sunshines`](https://github.com/sueszli/uwaterloos-sunshines)"
+    - "Dashboard: [`sueszli.github.io/uwaterloos-sunshines`](https://sueszli.github.io/uwaterloos-sunshines/)"
 documentclass: article
 papersize: a4
 fontsize: 10pt
@@ -315,28 +317,29 @@ The tasks of this section are to:
 - Use a library, not a fully-featured application, not a Jupyter notebook.
 - See examples: https://tuwel.tuwien.ac.at/mod/page/view.php?id=2433356
 
+In the final stage of our data science pipeline, we developed and deployed an interactive web dashboard as shown in Figure \ref{fig:scn}. We faced the challenge of selecting an appropriate Python framework for implementing interactive visualizations with efficient brushing and linking, given the numerous options available.
 
+After careful consideration of various options, we decided to utilize Vega-Altair for our project. **Vega-Altair** stood out due to its extremely concise language and intuitive implementation of plots. We were impressed by its ability to stack plots using simple boolean operators and its straightforward approach to creating various visualizations. With Vega-Altair, we successfully implemented all four of our linked plots in less than 100 lines of code. Additionally, we were able to export the plot into an editable HTML file, which proved to be highly intuitive to extend and easy to deploy on **GitHub Pages**.
 
+While Vega-Altair was our ultimate choice, we also explored other popular options. Plotly with Dash was a strong contender, offering a comprehensive library and the ability to generate impressive 3D graphics. Bokeh was another viable option, providing callbacks in both JavaScript and Python, although we found its syntax less appealing compared to Plotly and Altair. We also considered Streamlit, which acts as a wrapper for other tools, but its lack of self-deployment options and difficulties with HTML export made it less suitable for our needs. Matplotlib with ipywidgets and bqplot were also evaluated but ultimately discarded due to challenges with HTML export. Some other frameworks we looked into, such as pygal, mpld3, and datapane, had limitations that made them unsuitable for our specific requirements. Shiny for Python, while promising, was still relatively unknown and lacked the established ecosystem we were seeking.
 
+After adding 2 new inferred features to our dataset in memory, namely the `latest_salary` and `latest_benefits` we started building the dashboard. Our dashboard consists of four linked plots, each serving a specific purpose in our analysis.
 
-<!--
+The first plot, which we call the "query scatter," visualizes the quality and quantity of work. We encoded the citation count on the x-axis and the paper count on the y-axis, using circles to represent each data point. The color of each circle represents the combined performance metric. We included tooltips to display additional information when hovering over a data point, such as the researcher's name, sex, h-index, latest total compensation, and role. This plot serves as the main selection tool, allowing users to brush over areas of interest.
 
-interactive dashboard
+The second plot, the "result scatter," shows the relationship between latest salary and latest benefits. This plot is linked to the query scatter, displaying only the data points selected in the first plot. We used the same color encoding for the combined performance metric, allowing users to see how performance relates to compensation.
 
-4 plots
+The third plot is a bar chart showing the sex ratio of the selected researchers. We used custom colors (blue for male and pink for female) to make the distinction clear. This visualization helps users quickly understand the gender distribution within their selection.
 
-with linking (changes in one view affect others, but not global filters)
+The fourth plot is another bar chart displaying the count of researchers in different role clusters. We used a color scheme from Tableau to differentiate between the various roles. This plot provides insight into the distribution of roles among the selected researchers.
 
+We implemented brushing and linking by adding a selection parameter to the query scatter and applying this filter to the other three plots. This allows users to interactively explore subsets of the data across all four visualizations simultaneously.
 
--->
+Our intuition behind this design was to create a dashboard that allows users to explore the relationships between research output, compensation, gender, and roles in academia. By linking these visualizations, we enable users to discover patterns and insights that might not be apparent when looking at each aspect in isolation.
 
+From an information visualization perspective, this approach is particularly effective for several reasons. First, it allows users to interact with the data directly, promoting active exploration and discovery. Second, the linked views provide context and multiple perspectives on the same subset of data, enabling users to see connections between different variables. Third, the use of color coding and tooltips adds depth to the visualizations without cluttering the main display.
 
-
-
-
-
-
-
+We believe this dashboard effectively communicates our findings to a broad audience by presenting complex data relationships in an intuitive, visually appealing manner. The interactive nature of the dashboard empowers users to investigate their own hypotheses and draw their own conclusions, making the research more engaging and accessible to those without a deep background in data science or academia.
 
 \newpage
 
@@ -353,3 +356,5 @@ with linking (changes in one view affect others, but not global filters)
 ![Latent Representation Clustering of Roles.\label{fig:rolesclusters}](data/assets/role-clusters.png)
 
 ![Sex inference based on name via Text Classification.\label{fig:cls}](data/assets/mf-ratio.png)
+
+![Screenshot of Github Pages deployment next to implementation.\label{fig:scn}](data/assets/screenshot.png)
