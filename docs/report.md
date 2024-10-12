@@ -270,25 +270,19 @@ The average median total compensation per group spans from $105k to $222k. Based
 
 While these insights demonstrate that our clustering algorithm has effectively grouped roles with similar sex ratios and median compensations to some extent, they do not offer actionable insights or significant value beyond this confirmation. Our subsequent analysis will aim to uncover more practical insights by examining timeseries data and observing how compensation and role clusters have evolved over time.
 
-
-
-
-
 #### 3. The impact of the COVID-19 pandemic is very clear.
 
+In this conclusive section of our data analysis, we aim to dig into the temporal dimension of our dataset, particularly given that we have four distinct timestamps available. Three of these timestamps allow us to compute a delta value based on their predecessors, as illustrated in the final plot located in the bottom right corner of Figure \ref{fig:timeseries}. We have meticulously compiled nine time plots, each offering insights into different facets of the data.
 
+The first plot, which focuses on the total number of employees, reveals a significant increase in hirings from 2022 to 2023 when compared to the period from 2020 to 2022. Given the brevity of our time window and the fact that we initially did not anticipate conducting such an analysis—considering there are numerous additional timestamps available online—there is no way to contextualize this within a broader historical framework. This pronounced increase in hirings is also evident in the second plot, which displays the total number of men and women employed per year. Interestingly, both genders exhibit similar patterns of change.
 
+A particularly noteworthy finding is the remarkably sharp increase in median salary from 2020 to 2021, followed by an actual decline in salary from 2022 to 2023. This trend is mirrored in total compensation figures, as the benefits shown in the subsequent plot did not compensate for this decrease. 
 
+These observations can be further analyzed in a more nuanced manner through the final plot, where we examine the number of role changes (i.e., promotions), new hires, and new terminations per year compared to the previous year. This plot presents a different narrative: while the total number of terminations has remained relatively stagnant, there has been a visible decline in role changes since 2022, alongside a significant increase in new hires from that year onward. This pattern may suggest that the university has been reallocating its budget by reducing expenditures on promotions and salary adjustments while focusing more on hiring new staff as part of its scaling strategy. One possible reason for this could be a decline in academic performance metrics, as observed in four additional plots we have yet to discuss.
 
+We also examined performance metrics such as the *total number of papers published* by each researcher for each year they were employed. Similar analyses were conducted regarding the total number of citations, median h-index, and median performance index—computed during the wrangling stage by aggregating these metrics. The most intriguing result from this analysis is that during the peak of the COVID-19 pandemic in 2020, employee performance metrics dropped significantly and have not recovered since. This trend is evident in a sharp decline in both median h-index and citations despite a substantial increase in paper publications since 2022. This may indicate a significant drop in research quality and suggest that the university has been hiring more staff to offset deficiencies in research output quality.
 
-\ref{fig:timeseries}
-
-
-
-
-
-
-
+It is important to note that all these interpretations remain speculative. As mentioned earlier, our time window is short, there are numerous inaccuracies to consider, and we only have performance metrics available as of today—which may not accurately represent employee performance during those specific years. Consequently, our hypothetical interpretations should be regarded with caution and should serve merely as a preliminary basis for further analysis and discussion rather than definitive conclusions.
 
 # Model Stage
 
@@ -299,6 +293,10 @@ The tasks of this section are to:
 - Create one or more visualization(s) that describe the results of your model
     - How would you increase trust of your customers/colleagues in your modeling approach by using data visualization?
 - Keep the length to 1-2 A4 pages.
+
+
+
+
 
 \ref{fig:rolesclusters}
 
