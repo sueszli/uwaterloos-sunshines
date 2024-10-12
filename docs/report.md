@@ -311,18 +311,24 @@ The tasks of this section are to:
 - Show your findings in an interactive dashboard to a broader audience. The findings may be related to the Model/Wrangle/Profile stages.
     - Use appropriate charts, visual encodings (e.g., color).
     - Use at least four different types of visualizations / charts.
-    - Include interaction (e.g., filters, zoom, not a jupyter notebook), brushing & linking (changes in one view affect others, but not global filters)
-- Use a library, not fully-featured applications.
+    - Include interaction (e.g., filters, zoom), brushing & linking (changes in one view affect others, but not global filters)
+- Use a library, not a fully-featured application, not a Jupyter notebook.
 - See examples: https://tuwel.tuwien.ac.at/mod/page/view.php?id=2433356
 
 
 
 
 
+<!--
+
+interactive dashboard
+
+4 plots
+
+with linking (changes in one view affect others, but not global filters)
 
 
-
-
+-->
 
 
 
