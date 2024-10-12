@@ -243,7 +243,7 @@ In our analysis of data for insights, we find that some questions can be answere
 
 Our initial step in gaining an overview is not to categorize data based on their types or how they are stored in memory or scaled (such as ordinal, nominal, interval, ratio), but rather to organize them according to their semantic meaning. In our study, we distinguish between several key categories: (1) Demographic data, which includes the sex of the employee; (2) Performance data, encompassing the number of papers, citations, and h-index, all of which are aggregated in the `perf_combined` field; (3) Responsibility data, which covers the role of the employee and their role cluster; and (4) Reward Data, which consists of salary, benefits, and total compensation (where total compensation is the sum of salary and benefits).
 
-#### 1. Not all employees are researchers.
+## 1. Not all employees are researchers.
 
 The most intuitive way to understand the relationships between the attributes is to visualize the correlation matrix in the form of a heatmap. This visualization provides a comprehensive overview of the pairwise correlations between the numerical attributes in the dataset (in our case we encoded sex into a numerical attribute and dropped all rows where the classifier failed). The way to read this plot is to look at the color of the squares: the darker the color, the stronger the correlation. The color scale ranges from -1 to 1, where -1 indicates a perfect negative correlation, 0 indicates no correlation, and 1 indicates a perfect positive correlation. Beware that the correlation coefficient is not a measure of causation, so even if two attributes are highly correlated, it doesn't mean that one causes the other. Also keep in mind that the square is mirrored and the diagonal is always 1, because an attribute is always perfectly correlated with itself.
 
@@ -258,7 +258,7 @@ Due to the high information density and there being too many attributes to displ
 
 This brings us to the realization that given that one isn't rewarded at the university solely based on the employees research performance as there are also other administrative or technical roles that are well compensated this brings brings us to the conclution that the most interesting insights are to be found in the relationship between the role clusters, compensation, and the demographics. Next we want to explore them in a more nuanced way.
 
-#### 2. Sex and compensation are distributed unevenly across Role Clusters.
+## 2. Sex and compensation are distributed unevenly across Role Clusters.
 
 In our exploration of the relationships between defined semantic groups, we have now shifted our focus to a more detailed examination of the role clusters established during the preprocessing stage. Our current objective is to dig into the distribution of sexes across each of the 25 job clusters and assess the median compensation associated with each cluster. Although it might have been insightful to provide specific details about the individual roles within these clusters, we have chosen to omit such details to maintain brevity. The role titles are lengthy, and selecting five random roles per cluster would not offer a comprehensive understanding of each cluster's characteristics. For those interested in exploring the specifics of these role clusters, they can be accessed in our repository within the `data/role-clusters.json` file.
 
@@ -270,7 +270,7 @@ The average median total compensation per group spans from $105k to $222k. Based
 
 While these insights demonstrate that our clustering algorithm has effectively grouped roles with similar sex ratios and median compensations to some extent, they do not offer actionable insights or significant value beyond this confirmation. Our subsequent analysis will aim to uncover more practical insights by examining timeseries data and observing how compensation and role clusters have evolved over time.
 
-#### 3. The impact of the COVID-19 pandemic is very clear.
+## 3. The COVID-19 pandemic may have have significantly dropped research performance metrics.
 
 In this conclusive section of our data analysis, we aim to dig into the temporal dimension of our dataset, particularly given that we have four distinct timestamps available. Three of these timestamps allow us to compute a delta value based on their predecessors, as illustrated in the final plot located in the bottom right corner of Figure \ref{fig:timeseries}. We have meticulously compiled nine time plots, each offering insights into different facets of the data.
 
@@ -293,6 +293,15 @@ The tasks of this section are to:
 - Create one or more visualization(s) that describe the results of your model
     - How would you increase trust of your customers/colleagues in your modeling approach by using data visualization?
 - Keep the length to 1-2 A4 pages.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -324,6 +333,12 @@ can also use some prediction model on the timeseries data stuff - but the stuff 
 
 
 
+
+
+
+
+
+
 # Report Stage
 
 The tasks of this section are to:
@@ -334,6 +349,9 @@ The tasks of this section are to:
     - Include interaction (e.g., filters, zoom, not a jupyter notebook), brushing & linking (changes in one view affect others, but not global filters)
 - Use a library, not fully-featured applications.
 - See examples: https://tuwel.tuwien.ac.at/mod/page/view.php?id=2433356
+
+
+
 
 
 
