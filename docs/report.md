@@ -198,6 +198,9 @@ The tasks of this section are to:
 
 
 
+Some questions have a single word answer, like "what role pays the most?" or "what is the most common role?" but some questions are more complex and can be answered visually in a more nuanced way.
+
+
 
 # Model Stage
 
