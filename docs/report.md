@@ -77,7 +77,7 @@ The tasks of this section are to:
     - Which data cleaning steps have been necessary? Did you experience data issues, and if so, which ones? How did you solve them? Did you use automated methods? Did you use visualization to inspect data issues?
 - Visually show and explain the data quality of your dataset (for example, before and after cleaning steps). Come up with your own, creative, solution here.
 - Use a charting library, not fully-featured applications.
-- Keep the length to 3/4 to 1 A4 page.
+- Keep the length to $\frac{3}{4}$ to 1 A4 page.
 
 This stage is dedicated to data wrangling and information retreival which involves combining multiple datasets, cleaning the data, and ensuring its quality. The primary goal is to prepare the data for further analysis and visualization, addressing any issues that may arise during the process. It is the foundation for the subsequent stages of the data science pipeline in which insights are derived and models are built.
 
@@ -161,7 +161,7 @@ It's also worth mentioning that we have no certainty in whether the retrieved pe
 
 #### Data Preprocessing and Quality Assurance
 
-In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into CSV format and eliminated superfluous fields. Additionally, we inferred gender using a DistilBERT model for text classification with a test set accuracy of 1, adding another layer of demographic analysis (which will be discussed in more detail in the "Model Stage" chapter of this report). !!!!!!!!!!!!!!!!!!!!!!!!!! EXTEND THIS  !!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!!!!!!!!!!!!!!!!!! 
+In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into a CSV format by using a self-implemented version of R's `pivot_wider` function. We then dropped unnecessary fields to reduce data redundancy, inferred the employee's sex based on their name by using a DistilBERT model for text classification with a test set accuracy of 1 and clustered the 500+ roles into 25 clusters using sentence embeddings from the HuggingFace library and k-means clustering.The details on the machine learning algorithms used in the preprocessing stage are described in the relevant subsequent sections.
 
 To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final (`v4`) dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
 
@@ -181,11 +181,54 @@ $ find ./* -type f -exec wc -l {} +
     ...
 ```
 
-As the output shows, the initial merge of the 4 sunshine lists (each 2140, 1904, 1762, 1857 rows) resulted in a dataset with 2514 rows. By joining with CSRankings, we simply extended the dataset with features but didn't drop any rows. After fuzzy joining the dataset with the Semantic Scholar API for the final dataset however we lost 806 rows (= 2514 - 1708) or 32% of the data due to query misses.
+As shown in Figure \ref{fig:sankey}, the initial merge of the 4 sunshine lists (each 2140, 1904, 1762, 1857 rows) resulted in a dataset with 2514 rows. By joining with CSRankings, we simply extended the dataset with features but didn't drop any rows. After fuzzy joining the dataset with the Semantic Scholar API for the final dataset however we lost 806 rows (= 2514 - 1708) or 32% of the data due to query misses.
 
-![Sankey Diagram of file sizes after multiple merge and inner join operations.](data/assets/wrangle-sankey.png)
+![Sankey Diagram of file sizes after multiple merge and inner join operations.\label{fig:sankey}](data/assets/wrangle-sankey.png)
 
+These efforts in addition to some in-memory preprocessing before the profiling stage resulted in the following dataset schema:
 
+```txt
+name                    object
+sex                     object
+paper_count              int64
+citation_count           int64
+h_index                  int64
+role_2020               object
+role_cluster_2020      float64
+salary_2020            float64
+benefits_2020          float64
+role_2021               object
+role_cluster_2021      float64
+salary_2021            float64
+benefits_2021          float64
+role_2022               object
+role_cluster_2022      float64
+salary_2022            float64
+benefits_2022          float64
+role_2023               object
+role_cluster_2023      float64
+salary_2023            float64
+benefits_2023          float64
+latest_totalcomp       float64
+latest_role             object
+latest_role_cluster    float64
+perf_combined            int64
+totalcomp_2020         float64
+totalcomp_2021         float64
+totalcomp_2022         float64
+totalcomp_2023         float64
+```
+
+Where:
+
+- `name`: the name of the employee
+- `sex`: inferred based on the name using a text-classifier
+- `paper_count`, `citation_count`, `h_index`: metrics retrieved from the Semantic Scholar API as of October 2024
+- `role_{YYYY}`, `role_cluster_{YYYY}`: role and role cluster of the employee in the respective year
+- `salary_{YYYY}`, `benefits_{YYYY}`, `totalcomp_{YYYY}`: salary, benefits, and total compensation (consisting of salary and benefits) of the employee in the respective year
+- `latest_totalcomp`, `latest_role`, `latest_role_cluster`: total compensation, role, and role cluster of the employee in the latest year available
+
+Additionally, we computed $\Delta$ values per year for all the numerical attributes to facilitate time series analysis in the subsequent stages, starting from 2021 as the base year given that we had no predecessor data for 2020 to compute the changes with.
 
 # Profile Stage
 
@@ -194,12 +237,19 @@ In this section we explore the data in detail, to completely understand its stru
 The tasks of this section are to:
 
 - Find at least 3 informative insights in your dataset. For each one add a short text describing the insights plus one visualization.
-- Keep the length to 3/4 to 1 A4 page per insight.
+- Keep the length to $\frac{3}{4}$ to 1 A4 page per insight.
 
 
 
-Some questions have a single word answer, like "what role pays the most?" or "what is the most common role?" but some questions are more complex and can be answered visually in a more nuanced way.
+![Heatmap of Correlation Matrix](data/assets/heatmap-full.png)
 
+![Heatmap of Correlation Matrix](data/assets/heatmap-slim.png)
+
+![MF Totalcomp Ratio](data/assets/mf-totalcomp-ratio.png)
+
+![Timeseries](data/assets/timeseries-delta.png)
+
+![Timeseries](data/assets/timeseries.png)
 
 
 # Model Stage
@@ -214,6 +264,7 @@ The tasks of this section are to:
 
 ![Latent Representation Clustering of Roles](data/assets/role-clusters.png)
 
+![Sex inference based on name via Text Classification](data/assets/mf-ratio.png)
 
 <!-- 
 
