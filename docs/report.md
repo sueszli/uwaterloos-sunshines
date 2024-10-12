@@ -161,7 +161,7 @@ It's also worth mentioning that we have no certainty in whether the retrieved pe
 
 #### Data Preprocessing and Quality Assurance
 
-In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into a CSV format by using a self-implemented version of R's `pivot_wider` function. We then dropped unnecessary fields to reduce data redundancy, inferred the employee's sex based on their name by using a DistilBERT model for text classification with a test set accuracy of 1 and clustered the 500+ roles into 25 clusters using sentence embeddings from the HuggingFace library and k-means clustering.The details on the machine learning algorithms used in the preprocessing stage are described in the relevant subsequent sections.
+In our preprocessing phase, we combined data from all sources into a unified dataset joining: Sunshines List $\times$ CSRankings $\times$ Semantic Scholar API. To enhance query performance, we converted JSONL files into a CSV format by using a self-implemented version of R's `pivot_wider` function. We then dropped unnecessary fields to reduce data redundancy, inferred the employee's sex based on their name by using a DistilBERT model for text classification with a test set accuracy of 1 and clustered the 500+ roles into 25 clusters using sentence embeddings from the HuggingFace library and k-means clustering. For the sake of brevity we have omitted insights into the clustering of roles, but they can be looked up in the `data/role-clusters.json` file in the repository. Also, the details on the machine learning algorithms used in the preprocessing stage are described in the relevant subsequent sections.
 
 To ensure data quality and consistency, we maintained a detailed log of all data cleaning and integration steps, enabling reproducibility and transparency in our approach and validated the final (`v4`) dataset using CSVLint in every step. Additionally we encoded all substrings in UTF-8 to ensure compatibility with downstream tools and libraries and dropped all empty rows and columns. In the case of missing data, we opted to retain all records and adding `null` values rather than dropping them, as they could still provide valuable insights into the dataset's structure and potential biases. We didn't drop or impute any data other than rows with missing matches in the inner joins.
 
@@ -222,7 +222,7 @@ totalcomp_2023         float64
 Where:
 
 - `name`: the name of the employee
-- `sex`: inferred based on the name using a text-classifier
+- `sex`: inferred based on the name using a text-classifier (sometimes also stored as `sex_encoded` for specific queries)
 - `paper_count`, `citation_count`, `h_index`: metrics retrieved from the Semantic Scholar API as of October 2024
 - `role_{YYYY}`, `role_cluster_{YYYY}`: role and role cluster of the employee in the respective year
 - `salary_{YYYY}`, `benefits_{YYYY}`, `totalcomp_{YYYY}`: salary, benefits, and total compensation (consisting of salary and benefits) of the employee in the respective year
@@ -239,25 +239,55 @@ The tasks of this section are to:
 - Find at least 3 informative insights in your dataset. For each one add a short text describing the insights plus one visualization.
 - Keep the length to $\frac{3}{4}$ to 1 A4 page per insight.
 
-\ref{fig:heatmapfull}
+In our analysis of data for insights, we find that some questions can be answered with a single number. For instance, identifying which specific person or role earns the most or the least, or determining the current number of employees, can be resolved with a straightforward numerical answer. However, as our inquiries become more complex, utilizing visual representations with appropriate semantic visual encodings proves to be the most effective method for achieving a comprehensive understanding of the data.
 
-\ref{fig:heatmap}
+Our initial step in gaining an overview is not to categorize data based on their types or how they are stored in memory or scaled (such as ordinal, nominal, interval, ratio), but rather to organize them according to their semantic meaning. In our study, we distinguish between several key categories: (1) Demographic data, which includes the sex of the employee; (2) Performance data, encompassing the number of papers, citations, and h-index, all of which are aggregated in the `perf_combined` field; (3) Responsibility data, which covers the role of the employee and their role cluster; and (4) Reward Data, which consists of salary, benefits, and total compensation (where total compensation is the sum of salary and benefits).
 
-\ref{fig:mftotalcomp}
+#### 1. Not all employees are researchers.
 
-\ref{fig:timeseriesdelta}
+The most intuitive way to understand the relationships between the attributes is to visualize the correlation matrix in the form of a heatmap. This visualization provides a comprehensive overview of the pairwise correlations between the numerical attributes in the dataset (in our case we encoded sex into a numerical attribute and dropped all rows where the classifier failed). The way to read this plot is to look at the color of the squares: the darker the color, the stronger the correlation. The color scale ranges from -1 to 1, where -1 indicates a perfect negative correlation, 0 indicates no correlation, and 1 indicates a perfect positive correlation. Beware that the correlation coefficient is not a measure of causation, so even if two attributes are highly correlated, it doesn't mean that one causes the other. Also keep in mind that the square is mirrored and the diagonal is always 1, because an attribute is always perfectly correlated with itself.
+
+By plotting the corraltion matrix for all years as shown in Figure \ref{fig:heatmapfull} we can for instance also check whether performance in a previous year was predictive or indicative for performance of the previous year or whether the salary of the previous year was indicative for the salary of the next year.
+
+Due to the high information density and there being too many attributes to display and also the fact that our performance metrics are only from the latest year it would make most sense to restrict the heatmap to the most releant and recent attributes as shown in Figure \ref{fig:heatmap}. There we're only looking at representative attributes for each of the semantic categories mentioned earlier.
+
+- Given the low correlation between the inferred and encoded sex and every other attribute, we can conclude that sex does not play a significant role in determining the other attributes such as performance, responsibility, or rewards. This might indicate that the University of Waterloo has a fair compensation policy and is an equal opportunity employer.
+- The correlation between the performance metrics and the rewards is also very low. One might think that this is an indicator that the compensation isn't merit based but if one looks at the highest earning employee, the president, earning close to half a million canadian dollars in total compensation it suddenly makes sense that the correlation is low. The president is not a researcher and doesn't have any papers or citations but is still carries the most responsibility and is rewarded accordingly for it.
+- There is a noticable correlation of -0.38 between the role clusters and the compensation however which essentially just indicates that our clustering algorithm was successful in grouping roles with similar responsibilities together which usually also come with similar compensation.
+- Related to meta-science however is the correlation between the performance metrics. The h-index is highly correlated with the number of citations and the number of papers. This is not surprising as the h-index is a metric dependent on the number of papers and citations. The high correlation between the number of papers and citations is also expected as the more papers one publishes, the more citations one is likely to receive - it's just a numbers game.
+
+This brings us to the realization that given that one isn't rewarded at the university solely based on the employees research performance as there are also other administrative or technical roles that are well compensated this brings brings us to the conclution that the most interesting insights are to be found in the relationship between the role clusters, compensation, and the demographics. Next we want to explore them in a more nuanced way.
+
+#### 2. Sex and compensation are distributed unevenly across Role Clusters.
+
+In our exploration of the relationships between defined semantic groups, we have now shifted our focus to a more detailed examination of the role clusters established during the preprocessing stage. Our current objective is to dig into the distribution of sexes across each of the 25 job clusters and assess the median compensation associated with each cluster. Although it might have been insightful to provide specific details about the individual roles within these clusters, we have chosen to omit such details to maintain brevity. The role titles are lengthy, and selecting five random roles per cluster would not offer a comprehensive understanding of each cluster's characteristics. For those interested in exploring the specifics of these role clusters, they can be accessed in our repository within the `data/role-clusters.json` file.
+
+To effectively visualize the sex ratio and median compensation across these clusters, we opted for a horizontal bar chart. This format allows for a clear comparison of distributions by aligning bars from the same cluster adjacent to each other across both plots, facilitating easy comparison. Our choice of color encoding employs a custom pastel palette that is both aesthetically pleasing and colorblind-friendly. Additionally, we incorporate a traditional yet effective "blue vs. pink" color scheme, with a legend to clarify which color corresponds to which sex. Green is used to denote total compensation, drawing on its association with currency.
+
+Our analysis, as illustrated in Figure \ref{fig:mftotalcomp}, reveals that certain roles are predominantly occupied by women, with some clusters showing 100% female representation, while others are predominantly male-dominated, with as low as 7.7% female representation. Despite these disparities in sex distribution, compensation across clusters remains relatively consistent. This consistency is not influenced by demographic factors but rather by the nature of the roles themselves, as indicated by the correlation matrix from our previous insights.
+
+The average median total compensation per group spans from $105k to $222k. Based on our experience, this range appears reasonable when considering the cost of living in Waterloo, Ontario, Canada, as of October 2024.
+
+While these insights demonstrate that our clustering algorithm has effectively grouped roles with similar sex ratios and median compensations to some extent, they do not offer actionable insights or significant value beyond this confirmation. Our subsequent analysis will aim to uncover more practical insights by examining timeseries data and observing how compensation and role clusters have evolved over time.
+
+
+
+
+
+#### 3. The impact of the COVID-19 pandemic is very clear.
+
+
+
+
+
 
 \ref{fig:timeseries}
 
-![Heatmap of Correlation Matrix.\label{fig:heatmapfull}](data/assets/heatmap-full.png)
 
-![Heatmap of Correlation Matrix.\label{fig:heatmap}](data/assets/heatmap-slim.png)
 
-![MF Totalcomp Ratio.\label{fig:mftotalcomp}](data/assets/mf-totalcomp-ratio.png)
 
-![Timeseries.\label{fig:timeseriesdelta}](data/assets/timeseries-delta.png)
 
-![Timeseries.\label{fig:timeseries}](data/assets/timeseries.png)
+
 
 
 # Model Stage
@@ -274,9 +304,6 @@ The tasks of this section are to:
 
 \ref{fig:cls}
 
-![Latent Representation Clustering of Roles.\label{fig:rolesclusters}](data/assets/role-clusters.png)
-
-![Sex inference based on name via Text Classification.\label{fig:cls}](data/assets/mf-ratio.png)
 
 <!-- 
 
@@ -309,3 +336,23 @@ The tasks of this section are to:
     - Include interaction (e.g., filters, zoom, not a jupyter notebook), brushing & linking (changes in one view affect others, but not global filters)
 - Use a library, not fully-featured applications.
 - See examples: https://tuwel.tuwien.ac.at/mod/page/view.php?id=2433356
+
+
+
+
+
+\newpage
+
+# Addendum: Figures
+
+![Full Heatmap of Correlation Matrix.\label{fig:heatmapfull}](data/assets/heatmap-full.png)
+
+![Reduced Heatmap of Correlation Matrix.\label{fig:heatmap}](data/assets/heatmap-slim.png)
+
+![M/F-Ratio and Median Compenation per Role Cluster.\label{fig:mftotalcomp}](data/assets/mf-totalcomp-ratio.png)
+
+![Timeseries Visualization.\label{fig:timeseries}](data/assets/timeseries.png)
+
+![Latent Representation Clustering of Roles.\label{fig:rolesclusters}](data/assets/role-clusters.png)
+
+![Sex inference based on name via Text Classification.\label{fig:cls}](data/assets/mf-ratio.png)
